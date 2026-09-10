@@ -11,4 +11,11 @@
 - A local pre-split source archive and file hash inventory remain under ignored `output/repository-split/`. Generated outputs, saves, tunnel binaries and session logs were excluded from Git.
 - Existing running previews were not restarted or modified.
 
-Fresh GitHub checkout verification is recorded below after publication.
+## Fresh GitHub checkout
+
+Cloned `JoshTheMenace/partyplace` with `--recurse-submodules` from GitHub and installed dependencies with `npm ci`. The pinned games commit was `8ce1be460a417d886edad14c54010a57f83b6cb6`.
+
+TypeScript, a production build, all 313 collection tests and all 350 Kart tests passed again in that checkout. Started its built server on an owned temporary port: the catalog and runtime each returned nine games, and the Kart music endpoint returned HTTP 200 with the exact 7,491,916-byte asset length. Verified compatibility links resolve inside that checkout's game submodule. Stopped the temporary server after the check.
+
+Both GitHub repositories are private. The platform tree was checked to ensure it contains no files below the game implementation, Kart engine or game asset directory links. Only the submodule commit and symlinks are stored in the platform history. Full local logs and the fresh checkout are retained under ignored `output/repository-split/`.
+
