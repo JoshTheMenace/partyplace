@@ -1,0 +1,3 @@
+[submodule "game-modules"]
+	path = game-modules
+	url = https://github.com/JoshTheMenace/partyplay-games.git

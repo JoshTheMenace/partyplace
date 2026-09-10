@@ -1,0 +1,32 @@
+# Friction from the first six games
+
+Reviewed 2026-09-08 against the implementation, orchestration history, and final game QA reports. This is a workflow review, not a new security/performance certification or a request to rebuild the platform.
+
+## What worked
+
+Game ownership stayed separate from the shared room/UI code. Authoritative rules and explicit private projections supported focused tests; actual game switching retained seats. Claude's source-and-screenshot reviews supplied useful art/hierarchy directions, while Codex rejected unsuitable advice and verified the result. All six refinements passed their recorded browser checks, including maximum-content cases. Odd One In's retry completed successfully; exact implementation and verification scope are tracked in the [current refinement status](../../output/claude-refinement/STATUS.md).
+
+## Observed friction and prevention
+
+| Observed issue | Evidence | Change to the workflow |
+| --- | --- | --- |
+| Stale guidance described shared packages as nonexistent and required missing reference documents/helpers | Previous handbook/UI skill versus current exported APIs | AGENTS now routes to current source; handbook and UI skill use real local links and mark absent action/3D features explicitly. No second speculative contract. |
+| UI looked complete at 3 players, then broke at 10 with long answers | Tall reveal reached 1317px; Quip 885px; Sketch maximum-text vote 870px; Quiz 953px at a 720px display | Game owner now tests maximum roster AND maximum legal content early. Count decoys/distinct choices, ties, and concentrated votes, not just seats. Coordinator acceptance is a spot-check, not the first stress test. |
+| Passing document bounds missed visual defects | Shirt ranks split # and number; drawing pointer drift was about 110px; a Quip reveal capture required an additional transient-state check | Inspect actual rendered frames and descendants as well as geometry. Check arrival views and selected choices beside sticky controls; automatic click scrolling can conceal a poor starting layout. Exercise real input and transient states. |
+| Several builds arrived while tasks were testing older bundles; late CSS edits missed announced batches | Root and owner stale-module recovery, successive hash changes recorded in reports | Explicit editing/source-ready/built/verified states, frozen source until builder release, one build owner, stable QA windows, final hash verification. Different ports do not isolate the shared dist/client tree; preserve live sessions by using separate build output/assets or a safe global build boundary. |
+| Browser sessions disappeared while their daemons survived | Shirt's CLI source inspection found socket unlinking on connection errors, including EPERM; a global list could affect other sessions | Scoped browser commands with actual socket access; no global cleanup; record process ownership. Treat the mechanism as evidence-supported, not proof of which task caused each loss. |
+| Long game timers and manual image inspection caused missed vote windows and repeated rounds | Sketch and Shirt recorded valid zero-vote/timed-out rounds during screenshot review | Bounded scripts capture and submit in one phase, inspect images afterward, count accepted actions, retain complete-flow evidence, and retest only affected states. |
+| Initial browser play exposed lost drafts and idle time after everyone had acted | Odd's first QA added reload-safe answer/vote drafts; Quip and Quiz added readable-minimum early progression | Make draft/reload and delayed-ack behavior part of the first playable slice. State the intended pacing and all-submitted policy; test active play as well as timeout completion. |
+| Several game tasks hit the same test-runner IPC failure | Sketch, Shirt, Quip, and Quiz READMEs record the tsx wrapper's sandbox EPERM | Publish the working `node --import tsx --test` command once in the handbook instead of having each task diagnose the wrapper. |
+| Claude requests repeatedly failed despite approvals elsewhere in the task tree | Five owner reports and Odd's blocked status record approval-provenance rejection | Keep review payload and destination explicit in the originating request/brief. Report a rejection once and await supported access/authorization change; documentation cannot override automatic approval review. No standing Claude/model mandate added. |
+| Handoffs accumulated contradictory pending/complete claims and repeated messages | Intermediate evidence reports and build notices needed repeated reconciliation | One current-state report with a history section, exact source/build/QA states, and concise batched messages. Do not mark a task complete from a queued change. |
+
+Sources: [Odd's initial QA](../../output/playwright/odd-one-in/qa-evidence.md), [Sketch implementation notes](../../packages/games/sketch-bluff/README.md), [Quiz pacing](../../packages/games/quiz-panic/README.md), [root refinement QA](../../output/claude-refinement/ROOT-QA.md), [first browser pass](BROWSER-QA.md), [Quip](../../output/claude-refinement/quip-clash/advice-and-decisions.md), [Sketch](../../output/claude-refinement/sketch-bluff/advice-and-decisions.md), [Shirt](../../output/claude-refinement/shirt-show/advice-and-evidence.md), [Tall](../../output/claude-refinement/tall-tales/decisions-and-qa.md), [Quiz](../../output/claude-refinement/quiz-panic/ADVICE-AND-EVIDENCE.md).
+
+## What guidance cannot fix by itself
+
+Independent immutable build assets and a reusable timed browser-scenario harness would remove more friction than additional prose. Neither currently exists as a shared facility. The handbook now documents the isolated build-directory recipe exercised for Odd One In; reusable automated build promotion and scenario tooling remain proposed engineering.
+
+For fast 3D games, source inspection found a 100ms variable-dt server loop, no independent held-input sender or shared hold/steer controls, and a preparation gate that does not prove a WebGL frame. See [3D-READINESS.md](3D-READINESS.md) for the exact code, prerequisite decisions, and small-slice validation. A 3D board and a fast action game should not be assigned identical infrastructure work.
+
+Keep creative guidance light: require readable play, inspectable state, real render feedback, lifecycle correctness, and measured budgets. Do not prescribe a scene asset count, camera count, engine, or decorative layout for every game. This preserves room for different 2D/3D art directions while making the operational expectations explicit.

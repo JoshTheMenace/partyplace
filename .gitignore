@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.DS_Store
+
+.playwright-cli/
+output/builds/
+output/**/browser-profile/
+output/dashboard/kart-client-check*/
+
+output/world-saves/
+output/platform-mvp/tools/
+output/platform-mvp/*.pid
+
+# Local builds, game saves, session logs, screenshots and tool downloads.
+output/
+.env
+.env.*
+!.env.example
+*.pem
+*.key

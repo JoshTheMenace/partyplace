@@ -1,0 +1,47 @@
+{
+  "name": "local-party-collection",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch apps/party-server/src/main.ts",
+    "start": "node scripts/start-party.mjs",
+    "build": "node scripts/build-collection.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts packages/games/*/tests/*.test.ts",
+    "test:platform": "node --import tsx --test tests/*.test.ts",
+    "lint": "oxlint apps packages modules/kart-party/game modules/kart-party/server modules/kart-party/lib tests scripts",
+    "build:isolated": "node scripts/build-isolated.mjs",
+    "serve:isolated": "node scripts/serve-isolated.mjs",
+    "test:3d": "node --import tsx --test tests/runtime-3d.test.ts tests/scene-lab.test.ts tests/platform.test.ts",
+    "qa:3d": "node scripts/qa-3d.mjs",
+    "test:kart": "node scripts/test-kart.mjs",
+    "test:all": "npm test && npm run test:kart"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.31.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwind-merge": "^3.6.0",
+    "three": "^0.186.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
+    "@types/node": "^22.0.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@types/three": "^0.185.4",
+    "@types/ws": "^8.18.0",
+    "esbuild": "^0.25.0",
+    "oxlint": "^1.0.0",
+    "tailwindcss": "^4.2.1",
+    "tsx": "^4.19.0",
+    "tw-animate-css": "^1.4.0",
+    "typescript": "^5.8.0",
+    "vite": "^6.3.0"
+  }
+}

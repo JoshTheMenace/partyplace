@@ -1,0 +1,2 @@
+import { defineConfig } from 'vite';
+export default defineConfig({ plugins: [{ name: 'server-secrets-stay-server-side', moduleParsed(info) { if (/packages\/games\/[^/]+\/src\/(?:server|content(?:\.server)?)\.tsx?$/.test(info.id)) throw new Error('Server-only game module entered the browser graph: ' + info.id); } }], root: 'apps/party-client', publicDir: '../../public', build: { outDir: '../../dist/client', emptyOutDir: true } });

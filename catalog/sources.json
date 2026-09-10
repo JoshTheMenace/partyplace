@@ -1,0 +1,336 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": "partyplay",
+      "name": "PartyPlay originals",
+      "description": "Your first nine games. Play solo or bring friends.",
+      "games": [
+        {
+          "id": "kart-party",
+          "title": "Kart Party",
+          "description": "Four big courses. Ten tiny rivals. Drift, grab an item, and race for the finish.",
+          "category": "Racing",
+          "status": "ready",
+          "players": {
+            "min": 1,
+            "max": 10
+          },
+          "supportsSolo": true,
+          "requiresSharedDisplay": false,
+          "cooperative": false,
+          "controls": [
+            "Keyboard",
+            "Touch",
+            "Phone controllers"
+          ],
+          "playTime": "5–15 min",
+          "launch": "room",
+          "searchTerms": [
+            "racing",
+            "driving",
+            "solo",
+            "cpu",
+            "3d"
+          ],
+          "tags": [
+            "racing",
+            "driving",
+            "solo",
+            "CPU rivals"
+          ],
+          "creator": {
+            "name": "PartyPlay"
+          },
+          "detail": "Race solo against CPU drivers or bring friends into a room. Play on this screen with a keyboard or touch controls, or use phones as controllers.",
+          "capabilities": [
+            "browser-play",
+            "solo",
+            "keyboard",
+            "touch",
+            "phone-controllers"
+          ]
+        },
+        {
+          "id": "blockwild",
+          "title": "Blockwild",
+          "description": "Explore, craft, and build your own world.",
+          "players": {
+            "min": 1,
+            "max": 10
+          },
+          "supportsSolo": true,
+          "requiresSharedDisplay": false,
+          "cooperative": true,
+          "controls": [
+            "Keyboard",
+            "Touch",
+            "Phone controllers"
+          ],
+          "launch": "room",
+          "creator": {
+            "name": "PartyPlay"
+          },
+          "detail": "Explore, craft, and build your own world.",
+          "capabilities": [
+            "browser-play",
+            "shared-display",
+            "phone-controllers",
+            "solo",
+            "keyboard",
+            "touch",
+            "server-autosave"
+          ],
+          "category": "Sandbox",
+          "status": "ready",
+          "playTime": "Open-ended",
+          "searchTerms": [
+            "building",
+            "crafting",
+            "exploration",
+            "creative",
+            "survival",
+            "3d"
+          ]
+        },
+        {
+          "id": "kitchen-rush",
+          "title": "Kitchen Rush",
+          "description": "Cook orders and keep dinner moving, solo or together.",
+          "players": {
+            "min": 1,
+            "max": 10
+          },
+          "supportsSolo": true,
+          "requiresSharedDisplay": false,
+          "cooperative": true,
+          "controls": [
+            "Keyboard",
+            "Touch",
+            "Phone controllers"
+          ],
+          "launch": "room",
+          "creator": {
+            "name": "PartyPlay"
+          },
+          "detail": "Cook orders and keep dinner moving, solo or together.",
+          "capabilities": [
+            "browser-play",
+            "shared-display",
+            "phone-controllers",
+            "solo",
+            "keyboard",
+            "touch",
+            "host-browser-progress"
+          ],
+          "category": "Co-op",
+          "status": "ready",
+          "playTime": "3–5 min / level",
+          "searchTerms": [
+            "cooking",
+            "teamwork",
+            "campaign",
+            "3d"
+          ]
+        },
+        {
+          "id": "quip-clash",
+          "title": "Quip Clash",
+          "description": "Write ridiculous answers. Vote for your favorites.",
+          "players": {
+            "min": 3,
+            "max": 10
+          },
+          "supportsSolo": false,
+          "requiresSharedDisplay": true,
+          "cooperative": false,
+          "controls": [
+            "Phone controllers"
+          ],
+          "launch": "room",
+          "creator": {
+            "name": "PartyPlay"
+          },
+          "detail": "Write ridiculous answers. Vote for your favorites.",
+          "capabilities": [
+            "browser-play",
+            "shared-display",
+            "phone-controllers"
+          ],
+          "category": "Party",
+          "status": "ready",
+          "playTime": "10–15 min",
+          "searchTerms": [
+            "jokes",
+            "writing",
+            "voting"
+          ]
+        },
+        {
+          "id": "sketch-bluff",
+          "title": "Sketch Bluff",
+          "description": "Draw a prompt, bluff the room, and spot the truth.",
+          "players": {
+            "min": 3,
+            "max": 10
+          },
+          "supportsSolo": false,
+          "requiresSharedDisplay": true,
+          "cooperative": false,
+          "controls": [
+            "Phone controllers"
+          ],
+          "launch": "room",
+          "creator": {
+            "name": "PartyPlay"
+          },
+          "detail": "Draw a prompt, bluff the room, and spot the truth.",
+          "capabilities": [
+            "browser-play",
+            "shared-display",
+            "phone-controllers"
+          ],
+          "category": "Party",
+          "status": "ready",
+          "playTime": "10–15 min",
+          "searchTerms": [
+            "drawing",
+            "bluffing",
+            "art"
+          ]
+        },
+        {
+          "id": "tall-tales",
+          "title": "Tall Tales",
+          "description": "Invent a convincing lie. Find the real answer.",
+          "players": {
+            "min": 3,
+            "max": 10
+          },
+          "supportsSolo": false,
+          "requiresSharedDisplay": true,
+          "cooperative": false,
+          "controls": [
+            "Phone controllers"
+          ],
+          "launch": "room",
+          "creator": {
+            "name": "PartyPlay"
+          },
+          "detail": "Invent a convincing lie. Find the real answer.",
+          "capabilities": [
+            "browser-play",
+            "shared-display",
+            "phone-controllers"
+          ],
+          "category": "Party",
+          "status": "ready",
+          "playTime": "8–12 min",
+          "searchTerms": [
+            "trivia",
+            "lies",
+            "bluffing"
+          ]
+        },
+        {
+          "id": "shirt-show",
+          "title": "Shirt Show",
+          "description": "Turn drawings and slogans into questionable fashion.",
+          "players": {
+            "min": 3,
+            "max": 10
+          },
+          "supportsSolo": false,
+          "requiresSharedDisplay": true,
+          "cooperative": false,
+          "controls": [
+            "Phone controllers"
+          ],
+          "launch": "room",
+          "creator": {
+            "name": "PartyPlay"
+          },
+          "detail": "Turn drawings and slogans into questionable fashion.",
+          "capabilities": [
+            "browser-play",
+            "shared-display",
+            "phone-controllers"
+          ],
+          "category": "Party",
+          "status": "ready",
+          "playTime": "15–20 min",
+          "searchTerms": [
+            "drawing",
+            "shirts",
+            "slogans"
+          ]
+        },
+        {
+          "id": "odd-one-in",
+          "title": "Odd One In",
+          "description": "One player is missing the clue. Find them.",
+          "players": {
+            "min": 4,
+            "max": 10
+          },
+          "supportsSolo": false,
+          "requiresSharedDisplay": true,
+          "cooperative": false,
+          "controls": [
+            "Phone controllers"
+          ],
+          "launch": "room",
+          "creator": {
+            "name": "PartyPlay"
+          },
+          "detail": "One player is missing the clue. Find them.",
+          "capabilities": [
+            "browser-play",
+            "shared-display",
+            "phone-controllers"
+          ],
+          "category": "Party",
+          "status": "ready",
+          "playTime": "10–15 min",
+          "searchTerms": [
+            "hidden role",
+            "bluffing",
+            "deduction"
+          ]
+        },
+        {
+          "id": "quiz-panic",
+          "title": "Quiz Panic",
+          "description": "Fast trivia. Friendly rivalry.",
+          "players": {
+            "min": 2,
+            "max": 10
+          },
+          "supportsSolo": false,
+          "requiresSharedDisplay": true,
+          "cooperative": false,
+          "controls": [
+            "Phone controllers"
+          ],
+          "launch": "room",
+          "creator": {
+            "name": "PartyPlay"
+          },
+          "detail": "Fast trivia. Friendly rivalry.",
+          "capabilities": [
+            "browser-play",
+            "shared-display",
+            "phone-controllers"
+          ],
+          "category": "Party",
+          "status": "ready",
+          "playTime": "10–15 min",
+          "searchTerms": [
+            "quiz",
+            "trivia"
+          ]
+        }
+      ]
+    }
+  ]
+}
