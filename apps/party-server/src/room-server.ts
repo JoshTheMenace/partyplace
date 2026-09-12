@@ -222,7 +222,8 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
             round = { encoder: new SnapshotEncoder(), publicFrame: null, id: randomUUID(), worldId: randomUUID(), game: selected, state: null, players: roster.map(item => item.playerId!), inputs: new Map(), inputAt: new Map(), required: new Set([...identities.values()].filter(item => item.socket).map(item => item.id)), loaded: new Set(), deadline: now() + (options.prepareTimeoutMs ?? 20000), startAt: null, acks: new Map(), actionCounts: new Map(), clock: null, lastLegacyTick: now(), lastLegacySchedule: -Infinity, lastSnapshot: -Infinity };
             phase = 'preparing'; notice = null; broadcastRoom(); for (const item of identities.values()) send(item.socket, 'round.prepare', { roundId: round.id, gameId: selected.manifest.id, deadline: round.deadline }); break;
           }
-          case 'round.ready': { const current = requireRound(message); if (phase !== 'preparing') throw new Error('Preparation has ended.'); current.loaded.add(identity.id); beginIfReady(); break; }
+          // A cancelled load can leave readiness in flight; it must not affect a newer round.
+          case 'round.ready': { if (!round || message.roundId !== round.id || phase !== 'preparing') break; round.loaded.add(identity.id); beginIfReady(); break; }
           case 'round.failed': { const current = requireRound(message); if (!['preparing','playing'].includes(phase) || !current.required.has(identity.id)) throw new Error('This screen cannot stop the round.'); failRound(`${identity.name} could not load or render the game`, true); break; }
           case 'game.action': {
             const current = requireRound(message); const actionId = string(message.actionId, 80);

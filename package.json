@@ -10,13 +10,13 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts packages/games/*/tests/*.test.ts",
     "test:platform": "node --import tsx --test tests/*.test.ts",
-    "lint": "oxlint apps packages modules/kart-party/game modules/kart-party/server modules/kart-party/lib tests scripts",
+    "lint": "oxlint apps packages game-modules/packages tests scripts",
     "build:isolated": "node scripts/build-isolated.mjs",
     "serve:isolated": "node scripts/serve-isolated.mjs",
     "test:3d": "node --import tsx --test tests/runtime-3d.test.ts tests/scene-lab.test.ts tests/platform.test.ts",
     "qa:3d": "node scripts/qa-3d.mjs",
     "test:kart": "node scripts/test-kart.mjs",
-    "test:all": "npm test && npm run test:kart"
+    "test:all": "npm test"
   },
   "dependencies": {
     "clsx": "^2.1.1",
