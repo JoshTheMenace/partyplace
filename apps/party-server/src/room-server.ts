@@ -10,7 +10,7 @@ import { CONTRACT_VERSION, MAX_MESSAGE_BYTES, MAX_SAVE_BYTES, type GameManifest,
 import type { RoomPhase, RoomView, Wire } from '../../../packages/party-contract/src/protocol';
 import type { RecoverySlot, RecoveryStore } from './recovery-store';
 // Type erasure is confined to registry dispatch; games remain strictly typed at their exports.
-export type RegisteredGame = { manifest: GameManifest; rules: GameRules<any, any, any, any, any, any> };
+export type RegisteredGame = { manifest: GameManifest; rules: GameRules<any, any, any, any, any, any>; actionLimits?: { perPlayer: number; maxBytes: number } };
 type Identity = { id: string; token: string; playerId: string | null; name: string; color: string; ready: boolean; socket: WebSocket | null; seq: number; disconnectedAt: number | null };
 type PublicFrame = { revision: number; phase: RoomPhase; time: number; view: unknown; encoded: ReturnType<SnapshotEncoder['encode']> };
 type Round = { encoder: SnapshotEncoder; publicFrame: PublicFrame | null; id: string; worldId: string; game: RegisteredGame; state: any; players: string[]; inputs: Map<string, unknown>; inputAt: Map<string, number>; required: Set<string>; loaded: Set<string>; deadline: number; startAt: number | null; acks: Map<string, { payload: string; result: ActionResult }>; actionCounts: Map<string, number>; clock: FixedStepClock | null; lastLegacyTick: number; lastLegacySchedule: number; lastSnapshot: number };
@@ -28,6 +28,7 @@ export function validateManifest(manifest: GameManifest): void {
   if (manifest.contractVersion !== CONTRACT_VERSION || !/^[a-z]+(?:-[a-z]+)*$/.test(manifest.id) || !manifest.title || manifest.title.length > 80 || !manifest.description || manifest.description.length > 500 || manifest.assetBase !== `/games/${manifest.id}/` || !Array.isArray(manifest.modes) || manifest.modes.length !== 1 || manifest.modes[0] !== 'shared-display' || !Number.isInteger(manifest.players.min) || !Number.isInteger(manifest.players.max) || manifest.players.min < 1 || manifest.players.max > 10 || manifest.players.max < manifest.players.min || !['portrait','landscape','any'].includes(manifest.orientation.controller) || !['portrait','landscape','any'].includes(manifest.orientation.personalView) || !['turn-based','realtime'].includes(manifest.timing) || !Array.isArray(manifest.input) || !manifest.input.length || manifest.input.some(value => !['state','action'].includes(value)) || typeof manifest.privatePlayerViews !== 'boolean' || typeof manifest.supportsSolo !== 'boolean' || manifest.supportsSolo && manifest.players.min !== 1) throw new Error(`Invalid or unsupported manifest: ${manifest.id}`);
 }
 export function createRoomServer(server: Server, games: RegisteredGame[], options: { managed?: boolean; code?: string; now?: () => number; prepareTimeoutMs?: number; startDelayMs?: number; hostGraceMs?: number; heartbeatIntervalMs?: number; heartbeatTimeoutMs?: number; recoveryStore?: RecoveryStore; recoveryIntervalMs?: number; tickMs?: number; seed?: () => number } = {}) {
+  for (const { actionLimits: limits } of games) if (limits && (!Number.isInteger(limits.perPlayer) || limits.perPlayer < 1 || limits.perPlayer > 4096 || !Number.isInteger(limits.maxBytes) || limits.maxBytes < 1 || limits.maxBytes > MAX_MESSAGE_BYTES || limits.perPlayer * limits.maxBytes > 256 * MAX_MESSAGE_BYTES)) throw new Error('Invalid game action limits.');
   for (const game of games) { validateManifest(game.manifest); if (game.manifest.sessionControls?.includes('save') && (!game.rules.exportSave || !game.rules.loadSave) || game.manifest.sessionControls?.includes('finish') && !game.rules.finish) throw new Error('Missing session control hooks.'); assertSerializable(game.rules.validateSettings({})); }
   if (new Set(games.map(game => game.manifest.id)).size !== games.length) throw new Error('Duplicate game IDs.');
   const registry = new Map(games.map(game => [game.manifest.id, game]));
@@ -222,15 +223,17 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
             round = { encoder: new SnapshotEncoder(), publicFrame: null, id: randomUUID(), worldId: randomUUID(), game: selected, state: null, players: roster.map(item => item.playerId!), inputs: new Map(), inputAt: new Map(), required: new Set([...identities.values()].filter(item => item.socket).map(item => item.id)), loaded: new Set(), deadline: now() + (options.prepareTimeoutMs ?? 20000), startAt: null, acks: new Map(), actionCounts: new Map(), clock: null, lastLegacyTick: now(), lastLegacySchedule: -Infinity, lastSnapshot: -Infinity };
             phase = 'preparing'; notice = null; broadcastRoom(); for (const item of identities.values()) send(item.socket, 'round.prepare', { roundId: round.id, gameId: selected.manifest.id, deadline: round.deadline }); break;
           }
-          case 'round.ready': { const current = requireRound(message); if (phase !== 'preparing') throw new Error('Preparation has ended.'); current.loaded.add(identity.id); beginIfReady(); break; }
+          // A cancelled load can leave readiness in flight; it must not affect a newer round.
+          case 'round.ready': { if (!round || message.roundId !== round.id || phase !== 'preparing') break; round.loaded.add(identity.id); beginIfReady(); break; }
           case 'round.failed': { const current = requireRound(message); if (!['preparing','playing'].includes(phase) || !current.required.has(identity.id)) throw new Error('This screen cannot stop the round.'); failRound(`${identity.name} could not load or render the game`, true); break; }
           case 'game.action': {
             const current = requireRound(message); const actionId = string(message.actionId, 80);
             if (!identity.playerId || !current.players.includes(identity.playerId)) throw new Error('Spectators cannot submit game actions.');
+            if (current.game.actionLimits && Buffer.byteLength(JSON.stringify(message.payload ?? null)) > current.game.actionLimits.maxBytes) throw new Error('Game action is too large.');
             const key = `${identity.playerId}:${actionId}`, payload = canonical(message.payload ?? null), previous = current.acks.get(key);
             if (previous) { send(socket, 'action.ack', { roundId: current.id, actionId, ...(previous.payload === payload ? previous.result : { accepted: false, reason: 'Action ID reused with different payload.' }) }); break; }
             const count = current.actionCounts.get(identity.playerId) ?? 0;
-            if (count >= 256) throw new Error('Round action limit reached.');
+            if (count >= (current.game.actionLimits?.perPlayer ?? 256)) throw new Error('Round action limit reached.');
             let result: ActionResult;
             try { if (phase !== 'playing' || current.state === null) throw new Error('This round is not accepting actions.'); const action = current.game.rules.parseAction(message.payload); current.game.rules.applyAction(current.state, identity.playerId, action, now()); result = { accepted: true }; }
             catch (error) { result = { accepted: false, reason: error instanceof Error ? error.message : 'Invalid action.' }; }

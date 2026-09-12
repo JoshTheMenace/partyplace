@@ -7,6 +7,8 @@ export function buildCollection(directory = 'dist', env = process.env) {
   const steps = [
     ['node_modules/vite/bin/vite.js', 'build', '--outDir', resolve(root, 'client')],
     ['node_modules/esbuild/bin/esbuild', 'apps/party-server/src/main.ts', '--bundle', '--platform=node', '--format=esm', '--packages=external', `--outfile=${root}/server.mjs`],
+    // Self-contained bundle for the packaged local host: no node_modules next to the runtime. ws probes its optional native addons inside try/catch.
+    ['node_modules/esbuild/bin/esbuild', 'apps/party-server/src/local-host.ts', '--bundle', '--platform=node', '--format=esm', '--external:bufferutil', '--external:utf-8-validate', `--banner:js=import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);`, `--outfile=${root}/local-host.mjs`],
   ];
   for (const [command, ...args] of steps) {
     const native = command.includes('esbuild');

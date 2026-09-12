@@ -1,6 +1,8 @@
 import type { GameClientModule } from '../../../packages/party-ui/src/index';
 export type LoadedClient = GameClientModule<any, any, any, any, any>;
 export const clients: Record<string, () => Promise<LoadedClient>> = {
+  'island-settlers': () => import('../../../packages/games/island-settlers/src/client').then(module => module.client),
+  'sky-clash': () => import('../../../packages/games/sky-clash/src/client').then(module => module.client),
   'kart-party': () => import('../../../packages/games/kart-party/src/client').then(module => module.client),
   'blockwild': () => import('../../../packages/games/blockwild/src/client').then(module => module.client),
   'kitchen-rush': () => import('../../../packages/games/kitchen-rush/src/client').then(module => module.client),

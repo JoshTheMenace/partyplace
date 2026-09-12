@@ -17,7 +17,13 @@ import { rules as shirtRules } from '../../../packages/games/shirt-show/src/serv
 import { rules as oddRules } from '../../../packages/games/odd-one-in/src/server';
 import { rules as quizRules } from '../../../packages/games/quiz-panic/src/server';
 import type { RegisteredGame } from './room-server';
+import { manifest as settlersManifest } from '../../../packages/games/island-settlers/src/manifest';
+import { rules as settlersRules } from '../../../packages/games/island-settlers/src/server';
+import { manifest as skyManifest } from '../../../packages/games/sky-clash/src/manifest';
+import { rules as skyRules } from '../../../packages/games/sky-clash/src/server';
 export const games: RegisteredGame[] = [
+  { manifest: settlersManifest, rules: settlersRules, actionLimits: { perPlayer: 4096, maxBytes: 1024 } },
+  { manifest: skyManifest, rules: skyRules },
   { manifest: kartManifest, rules: kartRules },
   { manifest: blockwildManifest, rules: blockwildRules }, { manifest: kitchenManifest, rules: kitchenRules },
   { manifest: quipManifest, rules: quipRules }, { manifest: sketchManifest, rules: sketchRules },
