@@ -40,7 +40,7 @@ Simulation profiles accept integer step rates 15–120, snapshot rates 1–30 no
 
 ## Scene loading and lifetime
 
-For per-device 3D, SceneViewProps includes playerId, viewRole, privateView, connected, setInput, releaseInput and sendAction. A controller SceneView uses the same first-frame barrier and lifetime as the display, while ControllerView supplies its playing HUD. Keep terrain/public preparation data in validated settings; the server-only round seed is deliberately unavailable before rules.create. Browser acceptance of a new per-device game is still required.
+For per-device 3D, SceneViewProps includes playerId, viewRole, isHost, privateView, connected, setInput, releaseInput and sendAction. A controller SceneView uses the same first-frame barrier and lifetime as the display, while ControllerView supplies its playing HUD. Keep terrain/public preparation data in validated settings; the server-only round seed is deliberately unavailable before rules.create. Browser acceptance of a new per-device game is still required.
 
 Use `prepare({role,signal,assetBase})` for abortable shared loading. For a heavy display, lazy-import its renderer from SceneView so controllers download only their controls. SceneView receives roster/settings during preparation and public snapshots during play. Keep setup in an effect keyed by round/signal; read changing snapshots and callbacks through refs. Do not rebuild the renderer on every snapshot.
 
