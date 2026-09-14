@@ -9,11 +9,12 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { CONTRACT_VERSION, MAX_MESSAGE_BYTES, MAX_SAVE_BYTES, type GameManifest, type GameRules, type ActionResult } from '../../../packages/party-contract/src/index';
 import type { RoomPhase, RoomView, Wire } from '../../../packages/party-contract/src/protocol';
 import type { RecoverySlot, RecoveryStore } from './recovery-store';
+import { ActionWindow } from './action-window';
 // Type erasure is confined to registry dispatch; games remain strictly typed at their exports.
-export type RegisteredGame = { manifest: GameManifest; rules: GameRules<any, any, any, any, any, any>; actionLimits?: { perPlayer: number; maxBytes: number } };
+export type RegisteredGame = { manifest: GameManifest; rules: GameRules<any, any, any, any, any, any>; actionLimits?: { perPlayer: number; maxBytes: number; history?: 'window' } };
 type Identity = { id: string; token: string; playerId: string | null; name: string; color: string; ready: boolean; lobbyChoice?: unknown; socket: WebSocket | null; seq: number; disconnectedAt: number | null };
 type PublicFrame = { revision: number; phase: RoomPhase; time: number; view: unknown; encoded: ReturnType<SnapshotEncoder['encode']> };
-type Round = { encoder: SnapshotEncoder; publicFrame: PublicFrame | null; id: string; worldId: string; game: RegisteredGame; state: any; players: string[]; inputs: Map<string, unknown>; inputAt: Map<string, number>; required: Set<string>; loaded: Set<string>; deadline: number; startAt: number | null; acks: Map<string, { payload: string; result: ActionResult }>; actionCounts: Map<string, number>; clock: FixedStepClock | null; lastLegacyTick: number; lastLegacySchedule: number; lastSnapshot: number };
+type Round = { encoder: SnapshotEncoder; publicFrame: PublicFrame | null; id: string; worldId: string; game: RegisteredGame; state: any; players: string[]; inputs: Map<string, unknown>; inputAt: Map<string, number>; required: Set<string>; loaded: Set<string>; deadline: number; startAt: number | null; acks: Map<string, { payload: string; result: ActionResult }>; actionCounts: Map<string, number>; actionWindows: Map<string, ActionWindow>; clock: FixedStepClock | null; lastLegacyTick: number; lastLegacySchedule: number; lastSnapshot: number };
 const COLORS = ['#ff5748','#28c6e7','#78d955','#b58aff','#ffd24a','#ff90ba','#56decd','#ffa260','#97aeff','#e2ef93'];
 function record(value: unknown): Record<string, unknown> { if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Expected an object.'); return value as Record<string, unknown>; }
 function string(value: unknown, max = 80): string { if (typeof value !== 'string' || !value.length || value.length > max) throw new Error('Invalid text value.'); return value; }
@@ -28,7 +29,7 @@ export function validateManifest(manifest: GameManifest): void {
   if (manifest.contractVersion !== CONTRACT_VERSION || !/^[a-z]+(?:-[a-z]+)*$/.test(manifest.id) || !manifest.title || manifest.title.length > 80 || !manifest.description || manifest.description.length > 500 || manifest.assetBase !== `/games/${manifest.id}/` || !Array.isArray(manifest.modes) || manifest.modes.length !== 1 || manifest.modes[0] !== 'shared-display' || !Number.isInteger(manifest.players.min) || !Number.isInteger(manifest.players.max) || manifest.players.min < 1 || manifest.players.max > 10 || manifest.players.max < manifest.players.min || !['portrait','landscape','any'].includes(manifest.orientation.controller) || !['portrait','landscape','any'].includes(manifest.orientation.personalView) || !['turn-based','realtime'].includes(manifest.timing) || !Array.isArray(manifest.input) || !manifest.input.length || manifest.input.some(value => !['state','action'].includes(value)) || typeof manifest.privatePlayerViews !== 'boolean' || typeof manifest.supportsSolo !== 'boolean' || manifest.supportsSolo && manifest.players.min !== 1) throw new Error(`Invalid or unsupported manifest: ${manifest.id}`);
 }
 export function createRoomServer(server: Server, games: RegisteredGame[], options: { managed?: boolean; code?: string; now?: () => number; prepareTimeoutMs?: number; startDelayMs?: number; hostGraceMs?: number; heartbeatIntervalMs?: number; heartbeatTimeoutMs?: number; recoveryStore?: RecoveryStore; recoveryIntervalMs?: number; tickMs?: number; seed?: () => number } = {}) {
-  for (const { actionLimits: limits } of games) if (limits && (!Number.isInteger(limits.perPlayer) || limits.perPlayer < 1 || limits.perPlayer > 4096 || !Number.isInteger(limits.maxBytes) || limits.maxBytes < 1 || limits.maxBytes > MAX_MESSAGE_BYTES || limits.perPlayer * limits.maxBytes > 256 * MAX_MESSAGE_BYTES)) throw new Error('Invalid game action limits.');
+  for (const { actionLimits: limits } of games) if (limits && (!Number.isInteger(limits.perPlayer) || limits.perPlayer < (limits.history === 'window' ? 16 : 1) || limits.history !== undefined && limits.history !== 'window' || limits.perPlayer > 4096 || !Number.isInteger(limits.maxBytes) || limits.maxBytes < 1 || limits.maxBytes > MAX_MESSAGE_BYTES || limits.perPlayer * limits.maxBytes > 256 * MAX_MESSAGE_BYTES)) throw new Error('Invalid game action limits.');
   for (const game of games) { validateManifest(game.manifest); if (game.manifest.sessionControls?.includes('save') && (!game.rules.exportSave || !game.rules.loadSave) || game.manifest.sessionControls?.includes('finish') && !game.rules.finish) throw new Error('Missing session control hooks.'); assertSerializable(game.rules.validateSettings({})); }
   if (new Set(games.map(game => game.manifest.id)).size !== games.length) throw new Error('Duplicate game IDs.');
   const registry = new Map(games.map(game => [game.manifest.id, game]));
@@ -45,7 +46,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
   let lobbyId = randomUUID();
   let roomId = '', code = '', hostId = '', phase: RoomPhase = 'picker', revision = 0, selected: RegisteredGame | null = null, settings: unknown = {}, round: Round | null = null, notice: string | null = null;
   const players = () => [...identities.values()].filter(identity => identity.playerId !== null);
-  const view = (): RoomView => ({ id: roomId, code, revision, phase, hostId, hostConnected: !!identities.get(hostId)?.socket, players: players().map(identity => ({ id: identity.playerId!, name: identity.name, color: identity.color, connected: !!identity.socket, ready: identity.ready, ...(identity.lobbyChoice !== undefined && selected?.rules.parseLobbyChoice ? { lobbyChoice: identity.lobbyChoice } : {}) })), ...(selected?.rules.parseLobbyChoice ? { lobbyId } : {}), gameId: selected?.manifest.id ?? null, settings, roundId: round?.id ?? null, activePlayerIds: round?.players ?? [], startAt: round?.startAt ?? null, preparationDeadline: round?.deadline ?? null, notice });
+  const view = (): RoomView => ({ id: roomId, code, revision, phase, hostId, hostConnected: !!identities.get(hostId)?.socket, players: players().map(identity => ({ id: identity.playerId!, name: identity.name, color: identity.color, connected: !!identity.socket, ready: identity.ready, ...(identity.lobbyChoice !== undefined && selected?.rules.parseLobbyChoice ? { lobbyChoice: identity.lobbyChoice } : {}) })), ...(selected?.rules.parseLobbyChoice ? { lobbyId } : {}), gameId: selected?.manifest.id ?? null, settings, roundId: round?.id ?? null, activePlayerIds: round?.players ?? [], startAt: round?.startAt ?? null, preparationDeadline: round?.deadline ?? null, notice, ...(selected?.actionLimits?.history === 'window' ? { actionWindow: selected.actionLimits.perPlayer } : {}) });
   function send(socket: WebSocket | null, type: string, data: Record<string, unknown> = {}) {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     if (socket.bufferedAmount > 2 * 1024 * 1024) { socket.close(1013, 'Connection too slow. Reconnect.'); return; }
@@ -97,7 +98,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
   function beginIfReady() { if (!round || phase !== 'preparing' || round.startAt !== null || [...round.required].some(id => !round!.loaded.has(id) || !identities.get(id)?.socket)) return; round.startAt = now() + (options.startDelayMs ?? 1000); broadcastRoom(); for (const identity of identities.values()) send(identity.socket, 'round.begin', { roundId: round.id, startAt: round.startAt }); }
   function requireHost(identity: Identity) { if (identity.id !== hostId) throw new Error('Only the room host can do that.'); }
   function requireRound(message: Wire) { if (!round || message.roundId !== round.id) throw new Error('This action belongs to an old round.'); return round; }
-  function welcome(identity: Identity) { send(identity.socket, 'room.welcome', { clientId: identity.id, playerId: identity.playerId, token: identity.token, room: view(), games: games.map(game => game.manifest) }); snapshot(identity); }
+  function welcome(identity: Identity) { send(identity.socket, 'room.welcome', { clientId: identity.id, playerId: identity.playerId, token: identity.token, room: view(), games: games.map(game => game.manifest), ...(round?.game.actionLimits?.history === 'window' ? { nextActionSequence: (round.actionWindows.get(identity.playerId ?? '')?.highestSequence ?? 0) + 1 } : {}) }); snapshot(identity); }
   function authorizeSave(token: string, roundId: string) {
     const identity = [...identities.values()].find(item => item.token === token);
     if (!identity) throw new Error('Host authentication required.');
@@ -133,7 +134,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
       validateViews(game, candidate.state, id, roster.map(item => item.playerId!), 'playing');
     } catch (error) { if (candidate?.state != null && candidate.state !== current?.state) { try { game.rules.dispose(candidate.state); } catch { /* Preserve the import validation error. */ } } throw error; }
     checkpoint(current);
-    round = { game, encoder: new SnapshotEncoder(), publicFrame: null, id, worldId, state: candidate.state, players: roster.map(item => item.playerId!), inputs: new Map(), inputAt: new Map(), required: new Set([...identities.values()].filter(item => item.socket).map(item => item.id)), loaded: new Set(), deadline: time + (options.prepareTimeoutMs ?? 20000), startAt: null, acks: new Map(), actionCounts: new Map(), clock: null, lastLegacyTick: time, lastLegacySchedule: -Infinity, lastSnapshot: -Infinity };
+    round = { game, encoder: new SnapshotEncoder(), publicFrame: null, id, worldId, state: candidate.state, players: roster.map(item => item.playerId!), inputs: new Map(), inputAt: new Map(), required: new Set([...identities.values()].filter(item => item.socket).map(item => item.id)), loaded: new Set(), deadline: time + (options.prepareTimeoutMs ?? 20000), startAt: null, acks: new Map(), actionCounts: new Map(), actionWindows: new Map(), clock: null, lastLegacyTick: time, lastLegacySchedule: -Infinity, lastSnapshot: -Infinity };
     settings = candidate.settings; phase = 'preparing'; notice = null;
     for (const identity of identities.values()) { identity.seq = -1; identity.ready = false; }
     if (current) disposeState(current);
@@ -238,7 +239,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
             if (roster.some(item => !item.socket || !item.ready)) throw new Error('Every player must be connected and Ready. Remove disconnected seats or wait for them.');
             if (selected.rules.parseLobbyChoice) for (const seat of roster) selected.rules.parseLobbyChoice(seat.lobbyChoice, true);
             settings = selected.rules.validateSettings(settings); assertSerializable(settings);
-            round = { encoder: new SnapshotEncoder(), publicFrame: null, id: randomUUID(), worldId: randomUUID(), game: selected, state: null, players: roster.map(item => item.playerId!), inputs: new Map(), inputAt: new Map(), required: new Set([...identities.values()].filter(item => item.socket).map(item => item.id)), loaded: new Set(), deadline: now() + (options.prepareTimeoutMs ?? 20000), startAt: null, acks: new Map(), actionCounts: new Map(), clock: null, lastLegacyTick: now(), lastLegacySchedule: -Infinity, lastSnapshot: -Infinity };
+            round = { encoder: new SnapshotEncoder(), publicFrame: null, id: randomUUID(), worldId: randomUUID(), game: selected, state: null, players: roster.map(item => item.playerId!), inputs: new Map(), inputAt: new Map(), required: new Set([...identities.values()].filter(item => item.socket).map(item => item.id)), loaded: new Set(), deadline: now() + (options.prepareTimeoutMs ?? 20000), startAt: null, acks: new Map(), actionCounts: new Map(), actionWindows: new Map(), clock: null, lastLegacyTick: now(), lastLegacySchedule: -Infinity, lastSnapshot: -Infinity };
             phase = 'preparing'; notice = null; broadcastRoom(); for (const item of identities.values()) send(item.socket, 'round.prepare', { roundId: round.id, gameId: selected.manifest.id, deadline: round.deadline }); break;
           }
           // A cancelled load can leave readiness in flight; it must not affect a newer round.
@@ -249,12 +250,20 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
             if (!identity.playerId || !current.players.includes(identity.playerId)) throw new Error('Spectators cannot submit game actions.');
             if (current.game.actionLimits && Buffer.byteLength(JSON.stringify(message.payload ?? null)) > current.game.actionLimits.maxBytes) throw new Error('Game action is too large.');
             const key = `${identity.playerId}:${actionId}`, payload = canonical(message.payload ?? null), previous = current.acks.get(key);
+            const apply = (): ActionResult => {
+              try { if (phase !== 'playing' || current.state === null) throw new Error('This round is not accepting actions.'); const action = current.game.rules.parseAction(message!.payload); current.game.rules.applyAction(current.state, identity!.playerId!, action, now()); return { accepted: true }; }
+              catch (error) { return { accepted: false, reason: error instanceof Error ? error.message : 'Invalid action.' }; }
+            };
+            if (current.game.actionLimits?.history === 'window') {
+              let window = current.actionWindows.get(identity.playerId);
+              if (!window) { window = new ActionWindow(current.game.actionLimits.perPlayer); current.actionWindows.set(identity.playerId, window); }
+              const result = window.execute(actionId, message.retireThrough, payload, apply);
+              send(socket, 'action.ack', { roundId: current.id, actionId, ...result }); revision++; break;
+            }
             if (previous) { send(socket, 'action.ack', { roundId: current.id, actionId, ...(previous.payload === payload ? previous.result : { accepted: false, reason: 'Action ID reused with different payload.' }) }); break; }
             const count = current.actionCounts.get(identity.playerId) ?? 0;
             if (count >= (current.game.actionLimits?.perPlayer ?? 256)) throw new Error('Round action limit reached.');
-            let result: ActionResult;
-            try { if (phase !== 'playing' || current.state === null) throw new Error('This round is not accepting actions.'); const action = current.game.rules.parseAction(message.payload); current.game.rules.applyAction(current.state, identity.playerId, action, now()); result = { accepted: true }; }
-            catch (error) { result = { accepted: false, reason: error instanceof Error ? error.message : 'Invalid action.' }; }
+            const result = apply();
             current.acks.set(key, { payload, result }); current.actionCounts.set(identity.playerId, count + 1);
             send(socket, 'action.ack', { roundId: current.id, actionId, ...result }); revision++; break;
           }

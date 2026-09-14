@@ -1,3 +1,5 @@
+import { manifest as starshipManifest } from '../../../packages/games/starship-scramble/src/manifest';
+import { rules as starshipRules } from '../../../packages/games/starship-scramble/src/server';
 import { manifest as kartManifest } from '../../../packages/games/kart-party/src/manifest';
 import { rules as kartRules } from '../../../packages/games/kart-party/src/server';
 import { manifest as blockwildManifest } from '../../../packages/games/blockwild/src/manifest';
@@ -22,6 +24,7 @@ import { rules as settlersRules } from '../../../packages/games/island-settlers/
 import { manifest as skyManifest } from '../../../packages/games/sky-clash/src/manifest';
 import { rules as skyRules } from '../../../packages/games/sky-clash/src/server';
 export const games: RegisteredGame[] = [
+  { manifest: starshipManifest, rules: starshipRules, actionLimits: { perPlayer: 256, maxBytes: 1024, history: 'window' } },
   { manifest: settlersManifest, rules: settlersRules, actionLimits: { perPlayer: 4096, maxBytes: 1024 } },
   { manifest: skyManifest, rules: skyRules },
   { manifest: kartManifest, rules: kartRules },

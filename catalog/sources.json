@@ -407,6 +407,54 @@
             "shared-display",
             "phone-controllers"
           ]
+        },
+        {
+          "id": "starship-scramble",
+          "title": "Starship Scramble",
+          "description": "Command your own ship. Explore, upgrade, and fight together as a fleet.",
+          "category": "Co-op",
+          "status": "ready",
+          "players": {
+            "min": 1,
+            "max": 4
+          },
+          "supportsSolo": true,
+          "requiresSharedDisplay": false,
+          "cooperative": true,
+          "controls": [
+            "Keyboard",
+            "Touch",
+            "Phone controllers"
+          ],
+          "playTime": "30 beacons \u00b7 save anytime",
+          "launch": "room",
+          "searchTerms": [
+            "space",
+            "fleet",
+            "strategy",
+            "ships",
+            "expedition",
+            "cooperative"
+          ],
+          "tags": [
+            "co-op",
+            "strategy",
+            "space",
+            "save/resume"
+          ],
+          "creator": {
+            "name": "PartyPlay"
+          },
+          "detail": "Every captain commands a separate ship through a shared expedition. Use landscape phones or play solo on this screen. Save a session to continue later.",
+          "capabilities": [
+            "browser-play",
+            "shared-display",
+            "phone-controllers",
+            "solo",
+            "keyboard",
+            "touch",
+            "server-autosave"
+          ]
         }
       ]
     }
