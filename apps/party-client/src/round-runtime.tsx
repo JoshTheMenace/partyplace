@@ -12,7 +12,8 @@ export function RoundRuntime({ module, room, snapshot, playerId, isHost, connect
   const callbacks = useRef({ onError, onDispose }); callbacks.current = { onError, onDispose };
   const role = playerId ? 'controller' : 'display';
   const results = room.phase === 'results';
-  const orientation = usePhoneOrientation(), landscapePhone = !!playerId && orientation.phone && game.orientation[isHost ? 'personalView' : 'controller'] === 'landscape';
+  const portraitMenu = !!module.allowPortraitController?.(snapshot?.roundId === room.roundId ? snapshot.publicView : null);
+  const orientation = usePhoneOrientation(), landscapePhone = !!playerId && orientation.phone && !portraitMenu && game.orientation[isHost ? 'personalView' : 'controller'] === 'landscape';
   const blocked = landscapePhone && orientation.portrait && !results, blockedRef = useRef(blocked); blockedRef.current = blocked;
   const setInput = useCallback((input: unknown) => { if (!blockedRef.current) session.setInput(input); }, [session]);
   const sendAction = useCallback((action: unknown) => blockedRef.current ? Promise.resolve({ accepted: false, reason: 'Turn your phone sideways to play.' }) : session.sendAction(action), [session]);

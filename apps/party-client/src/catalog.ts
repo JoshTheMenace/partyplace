@@ -5,7 +5,7 @@ export type { CatalogGame, CatalogCapability, CatalogSource } from '../../../pac
 export type CatalogFilter = 'all' | 'solo' | 'shared-screen' | 'no-tv' | 'party' | 'co-op' | 'in-progress';
 const details: Record<string, Pick<CatalogGame, 'category' | 'status' | 'playTime' | 'searchTerms'>> = {
   'island-settlers': { category: 'Party', status: 'in-progress', playTime: 'About 60 min · varies', searchTerms: ['catan', 'settlers', 'board game', 'seafarers', 'connect', 'strategy', 'trading'] },
-  'sky-clash': { category: 'Party', status: 'in-progress', playTime: '1–3 min / match', searchTerms: ['melee', 'smash', 'fox', 'falco', 'fighter', 'combat', '3d'] },
+  'sky-clash': { category: 'Party', status: 'in-progress', playTime: '15 min / match · unlimited option', searchTerms: ['melee', 'smash', 'mario', 'fox', 'falco', 'kirby', 'marth', 'bowser', '33 fighters', 'combat', '3d'] },
   'quip-clash': { category:'Party',status:'ready',playTime:'10–15 min',searchTerms:['jokes','writing','voting'] },
   'sketch-bluff': { category:'Party',status:'ready',playTime:'10–15 min',searchTerms:['drawing','bluffing','art'] },
   'tall-tales': { category:'Party',status:'ready',playTime:'8–12 min',searchTerms:['trivia','lies','bluffing'] },

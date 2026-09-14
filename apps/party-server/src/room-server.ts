@@ -11,7 +11,7 @@ import type { RoomPhase, RoomView, Wire } from '../../../packages/party-contract
 import type { RecoverySlot, RecoveryStore } from './recovery-store';
 // Type erasure is confined to registry dispatch; games remain strictly typed at their exports.
 export type RegisteredGame = { manifest: GameManifest; rules: GameRules<any, any, any, any, any, any>; actionLimits?: { perPlayer: number; maxBytes: number } };
-type Identity = { id: string; token: string; playerId: string | null; name: string; color: string; ready: boolean; socket: WebSocket | null; seq: number; disconnectedAt: number | null };
+type Identity = { id: string; token: string; playerId: string | null; name: string; color: string; ready: boolean; lobbyChoice?: unknown; socket: WebSocket | null; seq: number; disconnectedAt: number | null };
 type PublicFrame = { revision: number; phase: RoomPhase; time: number; view: unknown; encoded: ReturnType<SnapshotEncoder['encode']> };
 type Round = { encoder: SnapshotEncoder; publicFrame: PublicFrame | null; id: string; worldId: string; game: RegisteredGame; state: any; players: string[]; inputs: Map<string, unknown>; inputAt: Map<string, number>; required: Set<string>; loaded: Set<string>; deadline: number; startAt: number | null; acks: Map<string, { payload: string; result: ActionResult }>; actionCounts: Map<string, number>; clock: FixedStepClock | null; lastLegacyTick: number; lastLegacySchedule: number; lastSnapshot: number };
 const COLORS = ['#ff5748','#28c6e7','#78d955','#b58aff','#ffd24a','#ff90ba','#56decd','#ffa260','#97aeff','#e2ef93'];
@@ -42,9 +42,10 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE_BYTES });
   const upgrade = (request: IncomingMessage, socket: Duplex, head: Buffer) => { if (request.url?.split('?')[0] === '/ws') wss.handleUpgrade(request, socket, head, peer => wss.emit('connection', peer, request)); };
   if (!options.managed) server.on('upgrade', upgrade);
+  let lobbyId = randomUUID();
   let roomId = '', code = '', hostId = '', phase: RoomPhase = 'picker', revision = 0, selected: RegisteredGame | null = null, settings: unknown = {}, round: Round | null = null, notice: string | null = null;
   const players = () => [...identities.values()].filter(identity => identity.playerId !== null);
-  const view = (): RoomView => ({ id: roomId, code, revision, phase, hostId, hostConnected: !!identities.get(hostId)?.socket, players: players().map(identity => ({ id: identity.playerId!, name: identity.name, color: identity.color, connected: !!identity.socket, ready: identity.ready })), gameId: selected?.manifest.id ?? null, settings, roundId: round?.id ?? null, activePlayerIds: round?.players ?? [], startAt: round?.startAt ?? null, preparationDeadline: round?.deadline ?? null, notice });
+  const view = (): RoomView => ({ id: roomId, code, revision, phase, hostId, hostConnected: !!identities.get(hostId)?.socket, players: players().map(identity => ({ id: identity.playerId!, name: identity.name, color: identity.color, connected: !!identity.socket, ready: identity.ready, ...(identity.lobbyChoice !== undefined && selected?.rules.parseLobbyChoice ? { lobbyChoice: identity.lobbyChoice } : {}) })), ...(selected?.rules.parseLobbyChoice ? { lobbyId } : {}), gameId: selected?.manifest.id ?? null, settings, roundId: round?.id ?? null, activePlayerIds: round?.players ?? [], startAt: round?.startAt ?? null, preparationDeadline: round?.deadline ?? null, notice });
   function send(socket: WebSocket | null, type: string, data: Record<string, unknown> = {}) {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     if (socket.bufferedAmount > 2 * 1024 * 1024) { socket.close(1013, 'Connection too slow. Reconnect.'); return; }
@@ -77,7 +78,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
     try { void options.recoveryStore.write(current.game.manifest.id, current.worldId, save, now()).catch(failed); } catch (error) { queueMicrotask(() => failed(error)); }
   }
   function disposeState(current: Round) { try { current.game.rules.dispose(current.state); } catch (error) { console.error('Game cleanup failed', error); } }
-  function clearRound(persist = true) { const old = round; if (persist) checkpoint(old); round = null; if (old?.state !== null && old) disposeState(old); for (const identity of identities.values()) { identity.ready = identity.id === hostId && !!identity.playerId; identity.seq = -1; } }
+  function clearRound(persist = true) { lobbyId = randomUUID(); const old = round; if (persist) checkpoint(old); round = null; if (old?.state !== null && old) disposeState(old); for (const identity of identities.values()) { identity.ready = identity.id === hostId && !!identity.playerId && !selected?.rules.parseLobbyChoice; identity.seq = -1; } }
   function failRound(error: unknown, preserveWorld = false) {
     const reason = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Game error', current = round;
     if (preserveWorld && current?.state != null && current.game.manifest.sessionControls?.includes('save') && current.game.rules.finish) {
@@ -177,7 +178,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
           if (message.type === 'room.rejoin') {
             const token = string(message.token, 128); const found = [...identities.values()].find(item => item.token === token);
             if (!found || message.code !== code) throw new Error('REJOIN: Saved seat expired. Join the room again.');
-            const previous = found.socket; found.socket = socket; identity = found; if (identity.id === hostId && identity.playerId) identity.ready = true; identity.seq = -1; identity.disconnectedAt = null; previous?.close(4001, 'Seat resumed on another connection');
+            const previous = found.socket; found.socket = socket; identity = found; if (identity.id === hostId && identity.playerId && !selected?.rules.parseLobbyChoice) identity.ready = true; identity.seq = -1; identity.disconnectedAt = null; previous?.close(4001, 'Seat resumed on another connection');
             if (round && phase === 'preparing' && round.required.has(identity.id)) { round.loaded.delete(identity.id); round.startAt = null; }
             if (round && identity.playerId && round.players.includes(identity.playerId)) { round.inputs.set(identity.playerId, round.game.rules.neutralInput()); round.inputAt.delete(identity.playerId); if (round.state !== null) round.game.rules.onPresenceChange(round.state, identity.playerId, true, now()); }
           } else if (message.type === 'room.create' || message.type === 'room.join') {
@@ -200,18 +201,34 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
             if (phase !== 'lobby' || !selected?.manifest.supportsSolo || typeof message.play !== 'boolean') throw Error('Choose a solo-capable game before joining on this screen.');
             if (message.play && !identity.playerId && players().length >= selected.manifest.players.max) throw Error('All player seats are occupied.');
             identity.color = COLORS.find(color => !players().some(player => player !== identity && player.color === color)) ?? COLORS[0];
-            identity.playerId = message.play ? identity.id : null; identity.name = 'Host'; identity.ready = message.play;
+            identity.playerId = message.play ? identity.id : null; identity.name = 'Host'; identity.ready = message.play && !selected.rules.parseLobbyChoice;
             broadcastRoom(); welcome(identity); break;
           }
-          case 'room.ready': if (phase !== 'lobby' || !identity.playerId || typeof message.ready !== 'boolean') throw new Error('Ready is only available in the lobby.'); identity.ready = message.ready; broadcastRoom(); break;
+          case 'lobby.choice': {
+            if (phase !== 'lobby' || !identity.playerId || !selected?.rules.parseLobbyChoice || message.lobbyId !== lobbyId) throw new Error('This lobby choice is no longer available.');
+            if (identity.ready) throw new Error('Tap Not ready before changing your choices.');
+            if (Buffer.byteLength(JSON.stringify(message.payload ?? null)) > 2048) throw new Error('Lobby choice is too large.');
+            const choice = selected.rules.parseLobbyChoice(message.payload, false); assertSerializable(choice);
+            if (Buffer.byteLength(JSON.stringify(choice)) > 2048) throw new Error('Lobby choice is too large.');
+            identity.lobbyChoice = choice; broadcastRoom(); break;
+          }
+          case 'room.ready':
+            if (phase !== 'lobby' || !identity.playerId || typeof message.ready !== 'boolean') throw new Error('Ready is only available in the lobby.');
+            if (selected?.rules.parseLobbyChoice) {
+              if (message.lobbyId !== lobbyId) throw new Error('This lobby has changed.');
+              if (message.ready) selected.rules.parseLobbyChoice(identity.lobbyChoice, true);
+            }
+            identity.ready = message.ready; broadcastRoom(); break;
           case 'game.select': {
             requireHost(identity); if (phase !== 'picker' && phase !== 'lobby' && phase !== 'results') throw new Error('End the current round before selecting a game.');
             const game = registry.get(string(message.gameId)); if (!game) throw new Error('Unknown game.');
             const validated = game.rules.validateSettings(message.settings ?? {}); assertSerializable(validated);
+            const keepChoices = phase === 'lobby' && selected?.manifest.id === game.manifest.id;
+            if (!keepChoices) for (const seat of identities.values()) delete seat.lobbyChoice;
             clearRound(); selected = game; settings = validated; phase = 'lobby'; notice = null;
             if (!game.manifest.supportsSolo) identity.playerId = null;
             else if (message.play === true && players().length === 0) { identity.playerId = identity.id; identity.name = 'Host'; }
-            if (identity.playerId) identity.ready = true;
+            if (identity.playerId) identity.ready = !game.rules.parseLobbyChoice;
             broadcastRoom(); welcome(identity); break;
           }
           case 'round.start': {
@@ -219,6 +236,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
             const roster = players(); const { min, max } = selected.manifest.players;
             if (roster.length < min || roster.length > max) throw new Error(`This game needs ${min}–${max} players.`);
             if (roster.some(item => !item.socket || !item.ready)) throw new Error('Every player must be connected and Ready. Remove disconnected seats or wait for them.');
+            if (selected.rules.parseLobbyChoice) for (const seat of roster) selected.rules.parseLobbyChoice(seat.lobbyChoice, true);
             settings = selected.rules.validateSettings(settings); assertSerializable(settings);
             round = { encoder: new SnapshotEncoder(), publicFrame: null, id: randomUUID(), worldId: randomUUID(), game: selected, state: null, players: roster.map(item => item.playerId!), inputs: new Map(), inputAt: new Map(), required: new Set([...identities.values()].filter(item => item.socket).map(item => item.id)), loaded: new Set(), deadline: now() + (options.prepareTimeoutMs ?? 20000), startAt: null, acks: new Map(), actionCounts: new Map(), clock: null, lastLegacyTick: now(), lastLegacySchedule: -Infinity, lastSnapshot: -Infinity };
             phase = 'preparing'; notice = null; broadcastRoom(); for (const item of identities.values()) send(item.socket, 'round.prepare', { roundId: round.id, gameId: selected.manifest.id, deadline: round.deadline }); break;
@@ -277,7 +295,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
       if (round && phase === 'preparing') {
         if (round.startAt !== null && time >= round.startAt) {
           if ([...round.required].some(id => !identities.get(id)?.socket)) { failRound('A required screen disconnected before the start'); return; }
-          if (round.state === null) round.state = round.game.rules.create({ roomId, roundId: round.id, players: players().filter(item => round!.players.includes(item.playerId!)).map(item => ({ id: item.playerId!, name: item.name, color: item.color })), seed: options.seed?.() ?? randomInt(0x7fffffff), nowMs: round.startAt }, settings);
+          if (round.state === null) round.state = round.game.rules.create({ roomId, roundId: round.id, players: players().filter(item => round!.players.includes(item.playerId!)).map(item => ({ id: item.playerId!, name: item.name, color: item.color, ...(item.lobbyChoice !== undefined && round!.game.rules.parseLobbyChoice ? { lobbyChoice: structuredClone(item.lobbyChoice) } : {}) })), seed: options.seed?.() ?? randomInt(0x7fffffff), nowMs: round.startAt }, settings);
           if (round.game.manifest.simulation) round.clock = new FixedStepClock(round.startAt, round.game.manifest.simulation.stepHz, round.game.manifest.simulation.maxCatchUpSteps);
           round.lastLegacyTick = time;
           for (const id of round.players) round.inputs.set(id, round.game.rules.neutralInput()); phase = 'playing'; broadcastRoom();

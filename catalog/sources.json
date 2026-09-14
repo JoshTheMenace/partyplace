@@ -374,7 +374,7 @@
         {
           "id": "sky-clash",
           "title": "Sky Clash",
-          "description": "Pick Fox or Falco. Build damage. Launch your rivals off Cloudbreak.",
+          "description": "Choose from 33 fighters. Build damage. Launch your rivals off Cloudbreak.",
           "category": "Party",
           "status": "in-progress",
           "players": {
@@ -387,7 +387,7 @@
           "controls": [
             "Phone controllers"
           ],
-          "playTime": "1\u20133 min / match",
+          "playTime": "15 min / match \u00b7 unlimited option",
           "launch": "room",
           "searchTerms": [
             "melee",
@@ -401,7 +401,7 @@
           "creator": {
             "name": "PartyPlay"
           },
-          "detail": "A playable two-character platform fighter using published Melee stats and normal attack scripts, with replacement models and reconstructed collision and special-move behavior. Shared display and landscape phone controllers.",
+          "detail": "A 33-fighter roster: 27 forms with published Melee movement and normal attack data, plus six adapted bonus fighters. Authored replacement models, reconstructed specials and collision, a shared display and landscape phone controllers.",
           "capabilities": [
             "browser-play",
             "shared-display",

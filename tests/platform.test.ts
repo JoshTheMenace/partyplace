@@ -420,3 +420,33 @@ test('cancelled-load readiness is silent and cannot ready a replacement round', 
     assert.equal(h.party.roomView().phase, 'playing'); assert(!r.host.packets.some(p => p.type === 'error'));
   } finally { await h.close(); }
 });
+
+test('per-seat lobby drafts validate readiness, retain reconnects/settings, reject stale edits and reset on replay/game switch', async () => {
+  let created: unknown[]=[];
+  const game=makeGame('lobby-game');game.rules={...rules,
+    parseLobbyChoice(raw,ready){const p=raw as {pick:string|null};if(!p||Object.keys(p).length!==1||p.pick!==null&&!['red','blue'].includes(p.pick)||ready&&!p.pick)throw Error('Choose first');return {pick:p.pick};},
+    create(ctx,settings){created=ctx.players.map(p=>p.lobbyChoice);return rules.create(ctx,settings);}};
+  const h=await harness([game,makeGame('other')]);
+  try {
+    const r=await room(h);r.host.send('game.select',{gameId:'lobby-game'});let v=(await r.host.take('room.state',p=>p.room.phase==='lobby')).room;
+    const choose=(peer:Peer,pick:string|null,id=v.lobbyId)=>peer.send('lobby.choice',{lobbyId:id,payload:{pick}});
+    r.phones[0].send('room.ready',{ready:true,lobbyId:v.lobbyId});assert.match((await r.phones[0].take('error')).reason,/Choose first/);
+    choose(r.host,'red');assert.match((await r.host.take('error')).reason,/no longer available/);
+    choose(r.phones[0],null);await r.host.take('room.state',p=>p.room.players[0]?.lobbyChoice?.pick===null);
+    choose(r.phones[0],'red');await r.host.take('room.state',p=>p.room.players[0]?.lobbyChoice?.pick==='red');
+    r.phones[0].send('room.ready',{ready:true,lobbyId:v.lobbyId});await r.host.take('room.state',p=>p.room.players[0]?.ready);
+    choose(r.phones[0],'blue');assert.match((await r.phones[0].take('error')).reason,/Not ready/);
+    r.phones[0].socket.close();await r.host.take('room.state',p=>!p.room.players[0]?.connected);
+    const resumed=await h.connect();resumed.send('room.rejoin',{code:r.hostWelcome.room.code,token:r.welcomes[0].token});const welcome=await resumed.take('room.welcome');assert.deepEqual(welcome.room.players[0]?.lobbyChoice,{pick:'red'});r.phones[0]=resumed;
+    const oldId=v.lobbyId;r.host.send('game.select',{gameId:'lobby-game',settings:{}});v=(await r.host.take('room.state',p=>p.room.lobbyId&&p.room.lobbyId!==oldId)).room;assert.deepEqual(v.players[0]?.lobbyChoice,{pick:'red'});
+    choose(resumed,'blue',oldId);assert.match((await resumed.take('error')).reason,/no longer available/);
+    choose(r.phones[1],'blue');await r.host.take('room.state',p=>p.room.players[1]?.lobbyChoice?.pick==='blue');
+    for(const p of r.phones)p.send('room.ready',{ready:true,lobbyId:v.lobbyId});await r.host.take('room.state',p=>p.room.players.length===2&&p.room.players.every((p:any)=>p.ready));
+    r.host.send('round.start');const prep=await r.host.take('round.prepare');for(const p of [r.host,...r.phones])p.send('round.ready',{roundId:prep.roundId});await r.host.take('game.snapshot',p=>p.roundId===prep.roundId);assert.deepEqual(created,[{pick:'red'},{pick:'blue'}]);
+    choose(resumed,'blue');assert.match((await resumed.take('error')).reason,/no longer available/);
+    for(const [i,p] of r.phones.entries()){p.send('game.action',{roundId:prep.roundId,actionId:String(i),payload:{turnId:'turn-1'}});assert.equal((await p.take('action.ack')).accepted,true);}await r.host.take('round.results');
+    let revision=h.party.roomView().revision;r.host.send('game.select',{gameId:'lobby-game'});await r.host.take('room.state',p=>p.room.revision>revision&&p.room.phase==='lobby'&&p.room.roundId===null);assert.ok(h.party.roomView().players.every(p=>p.lobbyChoice===undefined&&!p.ready));
+    revision=h.party.roomView().revision;r.host.send('game.select',{gameId:'other'});await r.host.take('room.state',p=>p.room.revision>revision&&p.room.gameId==='other');assert.equal(h.party.roomView().lobbyId,undefined);
+    revision=h.party.roomView().revision;r.host.send('game.select',{gameId:'lobby-game'});await r.host.take('room.state',p=>p.room.revision>revision&&p.room.gameId==='lobby-game');assert.ok(h.party.roomView().players.every(p=>p.lobbyChoice===undefined));
+  }finally{await h.close();}
+});
