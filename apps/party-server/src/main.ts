@@ -9,6 +9,7 @@ import { games } from './registry';
 import { readCatalog } from './catalog';
 const root = resolve(process.env.PARTY_ASSET_ROOT ?? 'dist/client');
 const port = Number(process.env.PORT ?? 4317);
+const host = process.env.HOST?.trim() || '0.0.0.0';
 const publicOrigin = parsePublicOrigin(process.env.PUBLIC_ORIGIN);
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT must be between 1 and 65535.');
 const mime: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf', '.woff2': 'font/woff2', '.json': 'application/json', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg' };
@@ -39,6 +40,6 @@ const server = createServer((request, response) => {
 const party = createRoomHub(server, games, { saveRoot: resolve(process.env.PARTY_SAVE_ROOT ?? 'output/world-saves'), roomOptions: process.env.PARTY_QA === '1' ? { seed: () => 20260908 } : {} });
 server.on('upgrade', (request, socket) => { if (!['/ws'].includes(request.url?.split('?')[0] ?? '')) socket.destroy(); });
 server.on('error', error => { console.error(`Party server could not start: ${error.message}. If the port is occupied, run PORT=4318 npm start.`); process.exitCode = 1; void party.close(); });
-server.listen(port, '0.0.0.0', () => { console.log(`Open the shared display: http://localhost:${port}`); const { urls } = discoverPartyAddresses(port); for (const url of urls) console.log(`Phones on the same Wi-Fi: ${url}`); if (!urls.length) console.log('No LAN address found. Connect this computer to Wi-Fi and reload the lobby.'); });
+server.listen(port, host, () => { console.log(`Open the shared display: http://localhost:${port}`); const { urls } = discoverPartyAddresses(port); for (const url of urls) console.log(`Phones on the same Wi-Fi: ${url}`); if (!urls.length) console.log('No LAN address found. Connect this computer to Wi-Fi and reload the lobby.'); });
 async function shutdown() { await party.close(); server.close(); }
 process.once('SIGINT', shutdown); process.once('SIGTERM', shutdown);

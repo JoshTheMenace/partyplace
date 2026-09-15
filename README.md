@@ -19,7 +19,7 @@ npm ci
 npm start
 ```
 
-The launcher builds the browser app and one Node server, then prints local and LAN addresses. It does not open additional browser windows. The default port is 4317; choose an unused port with `PORT=4360 npm start`. For existing live sessions, use an isolated build instead of replacing their assets:
+The launcher builds the browser app and one Node server, then prints local and LAN addresses. It does not open additional browser windows. The default port is 4317; choose an unused port with `PORT=4360 npm start`. The server listens on every interface by default; reverse-proxy deployments can limit it to loopback with `HOST=127.0.0.1`. For existing live sessions, use an isolated build instead of replacing their assets:
 
 ```sh
 npm run build:isolated -- my-library-build
