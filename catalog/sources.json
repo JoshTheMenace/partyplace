@@ -337,18 +337,22 @@
           "category": "Strategy",
           "status": "in-progress",
           "players": {
-            "min": 3,
+            "min": 1,
             "max": 10
           },
-          "supportsSolo": false,
-          "requiresSharedDisplay": true,
+          "supportsSolo": true,
+          "requiresSharedDisplay": false,
           "cooperative": false,
           "controls": [
+            "Keyboard",
+            "Touch",
             "Phone controllers"
           ],
           "playTime": "About 60 min \u00b7 varies",
           "launch": "room",
           "searchTerms": [
+            "solo",
+            "cpu",
             "catan",
             "settlers",
             "seafarers",
@@ -359,13 +363,16 @@
           "tags": [
             "strategy",
             "board game",
-            "3\u201310 players"
+            "1\u201310 players"
           ],
           "creator": {
             "name": "PartyPlay"
           },
-          "detail": "An early Catan-inspired game with Standard and Connect-style rounds, plus an Open Seas scenario using Seafarers mechanics. Requires a shared host display and one phone per player. Larger-player layouts and Connect are adaptations.",
+          "detail": "An early Catan-inspired game with Standard and Connect-style rounds, plus an Open Seas scenario using Seafarers mechanics. Play alone against CPUs on the host device, or invite friends with private phone hands. CPUs fill empty seats to the chosen table size. Larger-player layouts and Connect are adaptations.",
           "capabilities": [
+            "solo",
+            "keyboard",
+            "touch",
             "browser-play",
             "shared-display",
             "phone-controllers"
