@@ -462,6 +462,95 @@
             "touch",
             "server-autosave"
           ]
+        },
+        {
+          "id": "phonedig",
+          "title": "Phonedig",
+          "description": "Dig for treasure, manage your air and rescue your crew in a cooperative mining adventure.",
+          "detail": "Dig for treasure, manage your air and rescue your crew in a cooperative mining adventure.",
+          "category": "Co-op",
+          "status": "ready",
+          "players": {
+            "min": 1,
+            "max": 4
+          },
+          "supportsSolo": true,
+          "requiresSharedDisplay": false,
+          "cooperative": true,
+          "controls": [
+            "Keyboard",
+            "Touch",
+            "Phone controllers"
+          ],
+          "playTime": "10\u201330 min / run",
+          "launch": "room",
+          "searchTerms": [
+            "mining",
+            "digging",
+            "arcade",
+            "pixel art"
+          ],
+          "tags": [
+            "mining",
+            "digging",
+            "arcade",
+            "pixel art"
+          ],
+          "creator": {
+            "name": "ahcomputing"
+          },
+          "capabilities": [
+            "browser-play",
+            "solo",
+            "touch",
+            "phone-controllers",
+            "shared-display",
+            "keyboard"
+          ]
+        },
+        {
+          "id": "hotpot",
+          "title": "Hotpot",
+          "description": "Draw ingredients, collect three sets, and outcook your friends. Bots fill empty seats.",
+          "detail": "Draw ingredients, collect three sets, and outcook your friends. Bots fill empty seats.",
+          "category": "Party",
+          "status": "ready",
+          "players": {
+            "min": 1,
+            "max": 4
+          },
+          "supportsSolo": true,
+          "requiresSharedDisplay": false,
+          "cooperative": false,
+          "controls": [
+            "Mouse",
+            "Touch",
+            "Phone controllers"
+          ],
+          "playTime": "10\u201320 min",
+          "launch": "room",
+          "searchTerms": [
+            "cards",
+            "ingredients",
+            "sets",
+            "bots"
+          ],
+          "tags": [
+            "cards",
+            "ingredients",
+            "sets",
+            "bots"
+          ],
+          "creator": {
+            "name": "ahcomputing"
+          },
+          "capabilities": [
+            "browser-play",
+            "solo",
+            "touch",
+            "phone-controllers",
+            "shared-display"
+          ]
         }
       ]
     }

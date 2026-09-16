@@ -55,7 +55,7 @@ export function createPartyApp(options: PartyAppOptions) {
     if (request.method !== 'GET' && request.method !== 'HEAD') { response.writeHead(405).end('Use GET'); return; }
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'no-cache');
-    if (pathname === '/api/addresses') { response.setHeader('Content-Type', 'application/json'); response.end(JSON.stringify({ ...(publicOrigin ? { urls: [publicOrigin], preferredUrl: publicOrigin } : discoverPartyAddresses(port, undefined, request.headers.host, request.socket.localAddress)), host: hostKind })); return; }
+    if (pathname === '/api/addresses') { response.setHeader('Content-Type', 'application/json'); response.end(JSON.stringify({ ...(publicOrigin ? { urls: [publicOrigin], preferredUrl: publicOrigin } : discoverPartyAddresses(port, undefined, request.headers.host, request.socket.localAddress, (server.address() as { address?: string } | null)?.address)), host: hostKind })); return; }
     if (pathname === '/api/catalog') {
       response.setHeader('Content-Type', 'application/json'); response.setHeader('Cache-Control', 'no-store');
       void readCatalog(options.catalogPath, new Set(games.map(game => game.manifest.id))).then(sources => response.end(JSON.stringify({ games: games.map(game => game.manifest), sources }))).catch(error => { console.error('Catalog unavailable:', error.message); response.writeHead(503).end(JSON.stringify({ error: 'Discover is temporarily unavailable. Please try again.' })); });

@@ -23,7 +23,8 @@ test('one host plays all three solo games, reconnects and changes to Kart with t
     for (const id of ['blockwild','kitchen-rush','kart-party','blockwild']) {
       host.send('game.select', { gameId:id, play:true }); const welcome = await host.take('room.welcome', p => p.room.gameId === id);
       assert.equal(welcome.room.code, original.room.code); assert.equal(welcome.room.id, original.room.id); assert.equal(welcome.playerId, original.clientId); assert.equal(welcome.token, original.token);
-      assert.equal(welcome.room.players.length,1); assert(welcome.room.players[0].ready);
+      assert.equal(welcome.room.players.length,1);
+      if (welcome.room.lobbyId) { host.send('room.ready', { ready:true, lobbyId:welcome.room.lobbyId }); await host.take('room.state', p => p.room.players[0].ready); } else assert(welcome.room.players[0].ready);
       host.send('round.start'); const preparation = await host.take('round.prepare'); host.send('round.ready', {roundId:preparation.roundId});
       const snap = await host.take('game.snapshot', p => p.roundId === preparation.roundId);
       assert.equal((snap.publicView.players ?? snap.publicView.racers.filter((p:any) => !p.bot)).length,1);
@@ -47,7 +48,7 @@ test('ten phone seats survive Kitchen → Kart → Kitchen; a host cannot take a
       host.send('game.select',{gameId:id}); const selected = await host.take('room.welcome',p => p.room.gameId === id); assert.equal(selected.room.code,original.room.code); assert.deepEqual(selected.room.players.map((p:any) => p.id),ids);
       host.send('room.play',{play:true}); await host.take('error'); assert.equal(room.roomView().players.length,10);
       phones[0].send('room.play',{play:false}); await phones[0].take('error');
-      for (const phone of phones) phone.send('room.ready',{ready:true}); await host.take('room.state',p => p.room.gameId === id && p.room.players.every((x:any) => x.ready));
+      for (const phone of phones) phone.send('room.ready',{ready:true,lobbyId:selected.room.lobbyId}); await host.take('room.state',p => p.room.gameId === id && p.room.players.every((x:any) => x.ready));
       host.send('round.start'); const preparation = await host.take('round.prepare'); for (const peer of [host,...phones]) peer.send('round.ready',{roundId:preparation.roundId});
       const snap = await host.take('game.snapshot',p => p.roundId === preparation.roundId); assert.equal((snap.publicView.players ?? snap.publicView.racers).length,10);
       host.send('round.abort',{roundId:preparation.roundId}); await host.take('room.state',p => p.room.phase === 'lobby');

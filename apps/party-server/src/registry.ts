@@ -1,3 +1,7 @@
+import { manifest as phonedigManifest } from '../../../packages/games/phonedig/src/manifest';
+import { rules as phonedigRules } from '../../../packages/games/phonedig/src/server';
+import { manifest as hotpotManifest } from '../../../packages/games/hotpot/src/manifest';
+import { rules as hotpotRules } from '../../../packages/games/hotpot/src/server';
 import { manifest as starshipManifest } from '../../../packages/games/starship-scramble/src/manifest';
 import { rules as starshipRules } from '../../../packages/games/starship-scramble/src/server';
 import { manifest as kartManifest } from '../../../packages/games/kart-party/src/manifest';
@@ -24,6 +28,8 @@ import { rules as settlersRules } from '../../../packages/games/island-settlers/
 import { manifest as skyManifest } from '../../../packages/games/sky-clash/src/manifest';
 import { rules as skyRules } from '../../../packages/games/sky-clash/src/server';
 export const games: RegisteredGame[] = [
+  { manifest: phonedigManifest, rules: phonedigRules, actionLimits: { perPlayer: 256, maxBytes: 1024, history: 'window' } },
+  { manifest: hotpotManifest, rules: hotpotRules, actionLimits: { perPlayer: 256, maxBytes: 1024, history: 'window' } },
   { manifest: starshipManifest, rules: starshipRules, actionLimits: { perPlayer: 256, maxBytes: 1024, history: 'window' } },
   { manifest: settlersManifest, rules: settlersRules, actionLimits: { perPlayer: 4096, maxBytes: 1024 } },
   { manifest: skyManifest, rules: skyRules },

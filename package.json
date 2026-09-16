@@ -8,7 +8,7 @@
     "start": "node scripts/start-party.mjs",
     "build": "node scripts/build-collection.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/*.test.ts packages/games/*/tests/*.test.ts",
+    "test": "node --import tsx --test tests/*.test.ts packages/games/*/tests/*.test.ts packages/party-runtime/tests/*.test.ts",
     "test:platform": "node --import tsx --test tests/*.test.ts",
     "lint": "oxlint apps packages game-modules/packages tests scripts",
     "build:isolated": "node scripts/build-isolated.mjs",

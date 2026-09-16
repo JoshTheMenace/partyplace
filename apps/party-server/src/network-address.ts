@@ -15,7 +15,7 @@ function priority(name:string) {
   if(/^(utun|tun|tap|wg|vpn|tailscale|docker|veth|virbr|vmnet|bridge|br-|awdl|llw|gif|stf|zt)/i.test(name)) return 2;
   return /^(en\d|eth\d|wlan|wlp|eno|ens|enp|wi-?fi|ethernet)/i.test(name)?0:1;
 }
-export function discoverPartyAddresses(port:number,provider:NetworkInterfacesProvider=networkInterfaces,requestHost?:string,localAddress?:string) {
+export function discoverPartyAddresses(port:number,provider:NetworkInterfacesProvider=networkInterfaces,requestHost?:string,localAddress?:string,boundAddress?:string) {
   const addresses=Object.entries(provider()).flatMap(([name,entries])=>(entries??[])
     .filter(entry=>entry.family==='IPv4'&&!entry.internal&&usable(entry.address))
     .map(entry=>({address:entry.address,priority:priority(name),name})))
@@ -27,6 +27,7 @@ export function discoverPartyAddresses(port:number,provider:NetworkInterfacesPro
   let requested='';try {requested=new URL(`http://${requestHost??''}`).hostname;} catch { /* Invalid or absent Host falls back to discovery. */ }
   const preferred=candidates.find(entry=>entry.address===requested)?.address??candidates.find(entry=>entry.address===socketAddress)?.address??candidates[0]?.address;
   const ordered=[...(preferred?[preferred]:[]),...candidates.map(entry=>entry.address)];
-  const urls=[...new Set(ordered)].map(address=>`http://${address}:${port}`);
+  const bound=normalize(boundAddress??'');
+  const urls=[...new Set(ordered)].filter(address=>!bound||bound==='0.0.0.0'||bound==='::'||address===bound).map(address=>`http://${address}:${port}`);
   return {urls,preferredUrl:urls[0]??null};
 }
