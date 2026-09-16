@@ -256,3 +256,9 @@
 .kp-game-page-art .kp-catalog-cover{width:100%;height:100%;aspect-ratio:16/10}
 @media(max-width:800px){.kp-discover-layout{grid-template-columns:minmax(0,1fr);gap:1rem}.kp-source-buttons{display:none}.kp-source-select{display:grid;gap:.5rem;font-size:.85rem;font-weight:800}.kp-source-select select{width:100%;min-height:48px;font-size:16px;padding:.65rem;color:var(--kp-cream);background:var(--kp-navy);border:1px solid var(--border);border-radius:.65rem}.kp-source-list h2{display:none}}
 @media(max-width:650px){.kp-library-heading{align-items:flex-start;flex-direction:column;gap:.75rem;padding:.5rem 0}.kp-library-heading-actions{gap:.5rem}.kp-library-heading h1{font-size:2.5rem}.kp-library-heading p{font-size:.9rem}.kp-library-nav a{flex:1;justify-content:center;padding:.6rem}.kp-library-welcome{min-height:320px;padding:1.5rem 1rem}.kp-library-remove{font-size:.72rem}.kp-library-welcome small{font-size:.75rem}}
+
+/* Local host section inside the connection help dialog. */
+.kp-local-host{margin-top:1rem;padding:.9rem 1rem;border-radius:1rem;background:#05071a80;border:1px solid var(--border);display:grid;gap:.5rem}
+.kp-local-host>.kp-eyebrow{margin:0;color:var(--kp-lime)}
+.kp-local-host>p{margin:0;font-size:.9rem;line-height:1.5}
+.kp-local-host .kp-btn{justify-self:start;margin:.2rem 0 0}

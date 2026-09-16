@@ -4,7 +4,7 @@
     {
       "id": "partyplay",
       "name": "PartyPlay originals",
-      "description": "Your first nine games. Play solo or bring friends.",
+      "description": "Play solo or bring friends. A growing collection of local multiplayer games.",
       "games": [
         {
           "id": "kart-party",
@@ -24,7 +24,7 @@
             "Touch",
             "Phone controllers"
           ],
-          "playTime": "5–15 min",
+          "playTime": "5\u201315 min",
           "launch": "room",
           "searchTerms": [
             "racing",
@@ -125,7 +125,7 @@
           ],
           "category": "Co-op",
           "status": "ready",
-          "playTime": "3–5 min / level",
+          "playTime": "3\u20135 min / level",
           "searchTerms": [
             "cooking",
             "teamwork",
@@ -159,7 +159,7 @@
           ],
           "category": "Party",
           "status": "ready",
-          "playTime": "10–15 min",
+          "playTime": "10\u201315 min",
           "searchTerms": [
             "jokes",
             "writing",
@@ -192,7 +192,7 @@
           ],
           "category": "Party",
           "status": "ready",
-          "playTime": "10–15 min",
+          "playTime": "10\u201315 min",
           "searchTerms": [
             "drawing",
             "bluffing",
@@ -225,7 +225,7 @@
           ],
           "category": "Party",
           "status": "ready",
-          "playTime": "8–12 min",
+          "playTime": "8\u201312 min",
           "searchTerms": [
             "trivia",
             "lies",
@@ -258,7 +258,7 @@
           ],
           "category": "Party",
           "status": "ready",
-          "playTime": "15–20 min",
+          "playTime": "15\u201320 min",
           "searchTerms": [
             "drawing",
             "shirts",
@@ -291,7 +291,7 @@
           ],
           "category": "Party",
           "status": "ready",
-          "playTime": "10–15 min",
+          "playTime": "10\u201315 min",
           "searchTerms": [
             "hidden role",
             "bluffing",
@@ -324,10 +324,136 @@
           ],
           "category": "Party",
           "status": "ready",
-          "playTime": "10–15 min",
+          "playTime": "10\u201315 min",
           "searchTerms": [
             "quiz",
             "trivia"
+          ]
+        },
+        {
+          "id": "island-settlers",
+          "title": "Island Settlers",
+          "description": "Trade, build, and sail with private phone hands and a shared island board.",
+          "category": "Strategy",
+          "status": "in-progress",
+          "players": {
+            "min": 3,
+            "max": 10
+          },
+          "supportsSolo": false,
+          "requiresSharedDisplay": true,
+          "cooperative": false,
+          "controls": [
+            "Phone controllers"
+          ],
+          "playTime": "About 60 min \u00b7 varies",
+          "launch": "room",
+          "searchTerms": [
+            "catan",
+            "settlers",
+            "seafarers",
+            "connect",
+            "trading",
+            "board game"
+          ],
+          "tags": [
+            "strategy",
+            "board game",
+            "3\u201310 players"
+          ],
+          "creator": {
+            "name": "PartyPlay"
+          },
+          "detail": "An early Catan-inspired game with Standard and Connect-style rounds, plus an Open Seas scenario using Seafarers mechanics. Requires a shared host display and one phone per player. Larger-player layouts and Connect are adaptations.",
+          "capabilities": [
+            "browser-play",
+            "shared-display",
+            "phone-controllers"
+          ]
+        },
+        {
+          "id": "sky-clash",
+          "title": "Sky Clash",
+          "description": "Choose from 33 fighters. Build damage. Launch your rivals off Cloudbreak.",
+          "category": "Party",
+          "status": "in-progress",
+          "players": {
+            "min": 2,
+            "max": 4
+          },
+          "supportsSolo": false,
+          "requiresSharedDisplay": true,
+          "cooperative": false,
+          "controls": [
+            "Phone controllers"
+          ],
+          "playTime": "15 min / match \u00b7 unlimited option",
+          "launch": "room",
+          "searchTerms": [
+            "melee",
+            "smash",
+            "fox",
+            "falco",
+            "fighter",
+            "combat",
+            "3d"
+          ],
+          "creator": {
+            "name": "PartyPlay"
+          },
+          "detail": "A 33-fighter roster: 27 forms with published Melee movement and normal attack data, plus six adapted bonus fighters. Authored replacement models, reconstructed specials and collision, a shared display and landscape phone controllers.",
+          "capabilities": [
+            "browser-play",
+            "shared-display",
+            "phone-controllers"
+          ]
+        },
+        {
+          "id": "starship-scramble",
+          "title": "Starship Scramble",
+          "description": "Command your own ship. Explore, upgrade, and fight together as a fleet.",
+          "category": "Co-op",
+          "status": "ready",
+          "players": {
+            "min": 1,
+            "max": 4
+          },
+          "supportsSolo": true,
+          "requiresSharedDisplay": false,
+          "cooperative": true,
+          "controls": [
+            "Keyboard",
+            "Touch",
+            "Phone controllers"
+          ],
+          "playTime": "30 beacons \u00b7 save anytime",
+          "launch": "room",
+          "searchTerms": [
+            "space",
+            "fleet",
+            "strategy",
+            "ships",
+            "expedition",
+            "cooperative"
+          ],
+          "tags": [
+            "co-op",
+            "strategy",
+            "space",
+            "save/resume"
+          ],
+          "creator": {
+            "name": "PartyPlay"
+          },
+          "detail": "Every captain commands a separate ship through a shared expedition. Use landscape phones or play solo on this screen. Save a session to continue later.",
+          "capabilities": [
+            "browser-play",
+            "shared-display",
+            "phone-controllers",
+            "solo",
+            "keyboard",
+            "touch",
+            "server-autosave"
           ]
         }
       ]

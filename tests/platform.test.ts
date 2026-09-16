@@ -48,6 +48,25 @@ async function start(h: Awaited<ReturnType<typeof harness>>, r: Awaited<ReturnTy
   const snapshot = await r.host.take('game.snapshot', packet => packet.roundId === preparation.roundId); assert.equal(h.party.roomView().phase, 'playing'); return snapshot.roundId as string;
 }
 
+test('long board-game sessions keep bounded payloads and deduplication beyond 256 actions', async () => {
+  const game = makeGame('long-game'); game.actionLimits = { perPlayer: 260, maxBytes: 128 };
+  game.rules = { ...rules, outcome: () => ({ complete: false, winners: [], rows: [] }) };
+  const h = await harness([game]);
+  try {
+    const r = await room(h), roundId = await start(h, r, 'long-game'), phone = r.phones[0];
+    for (let i = 0; i < 260; i++) { phone.send('game.action', { roundId, actionId: `a${i}`, payload: { turnId: 'turn-1' } }); assert.equal((await phone.take('action.ack')).accepted, true); await delay(14); }
+    phone.send('game.action', { roundId, actionId: 'a0', payload: { turnId: 'turn-1' } }); assert.equal((await phone.take('action.ack')).accepted, true);
+    phone.send('game.action', { roundId, actionId: 'over-count', payload: { turnId: 'turn-1' } }); assert.match((await phone.take('action.ack')).reason, /action limit/);
+    r.phones[1].send('game.action', { roundId, actionId: 'over-bytes', payload: { turnId: 'turn-1', extra: 'x'.repeat(128) } }); assert.match((await r.phones[1].take('action.ack')).reason, /too large/);
+    const latest = await phone.take('game.snapshot', packet => packet.publicView.count === 260); assert.equal(latest.publicView.count, 260);
+  } finally { await h.close(); }
+});
+
+test('expanded action budgets cannot exceed the existing worst-case retained payload bound', () => {
+  const game = makeGame('invalid-budget'); game.actionLimits = { perPlayer: 4096, maxBytes: 32768 };
+  assert.throws(() => createRoomServer(createServer(), [game]), /action limits/);
+});
+
 test('late spectators cannot cancel the required screens common start by disconnecting or resuming',async()=>{
   let time=1000;const h=await harness(undefined,{now:()=>time,startDelayMs:100,prepareTimeoutMs:2000});
   try{
@@ -102,13 +121,13 @@ test('persistent room: spectator host, ten seats, authority, full-room reconnect
   } finally { await h.close(); }
 });
 
-test('preparation waits, times out with named screen, rejects stale ready; failed loading returns to lobby', async () => {
+test('preparation waits, times out with named screen, ignores stale ready; failed loading returns to lobby', async () => {
   const h = await harness(undefined, { prepareTimeoutMs: 60 }); try {
     const r = await room(h); r.host.send('game.select', { gameId: 'test-a' }); await r.host.take('room.state', packet => packet.room.phase === 'lobby');
     for (const phone of r.phones) phone.send('room.ready', { ready: true }); await r.host.take('room.state', packet => packet.room.players.every((player: any) => player.ready));
     r.host.send('round.start'); const prepare = await r.host.take('round.prepare'); r.host.send('round.ready', { roundId: prepare.roundId }); r.phones[0].send('round.ready', { roundId: prepare.roundId });
     const returned = await r.host.take('room.state', packet => packet.room.phase === 'lobby' && !!packet.room.notice); assert.match(returned.room.notice, /Player 2/); assert(!r.host.packets.some(packet => packet.type === 'game.snapshot'));
-    r.phones[1].send('round.ready', { roundId: prepare.roundId }); assert.match((await r.phones[1].take('error')).reason, /old round/);
+    r.phones[1].send('round.ready', { roundId: prepare.roundId }); r.phones[1].send('clock.ping', { clientTime: 1 }); await r.phones[1].take('clock.pong'); assert(!r.phones[1].packets.some(p => p.type === 'error')); assert.equal(h.party.roomView().phase, 'lobby');
   } finally { await h.close(); }
 });
 
@@ -246,7 +265,7 @@ test('host world saves authenticate, validate atomically, reload through fresh p
     const imported = await (await save('PUT', JSON.stringify({ format: 'world-test', count: 1 }))).json();
     await r.host.take('round.prepare', packet => packet.roundId === imported.roundId); assert.notEqual(imported.roundId, id); assert.equal(h.party.roomView().phase, 'preparing'); assert.equal(creates, 1); assert.equal(disposed, 1);
     assert.equal((await save()).ok, false);
-    r.host.send('round.ready', { roundId: id }); assert.match((await r.host.take('error')).reason, /old round/);
+    r.host.send('round.ready', { roundId: id }); r.host.send('clock.ping', { clientTime: 2 }); await r.host.take('clock.pong'); assert(!r.host.packets.some(p => p.type === 'error')); assert.equal(h.party.roomView().startAt, null);
     for (const peer of [r.host, ...r.phones]) peer.send('round.ready', { roundId: imported.roundId });
     const loaded = await r.host.take('game.snapshot', packet => packet.roundId === imported.roundId); assert.equal(loaded.publicView.count, 1); assert.equal(loaded.publicCache.reused, false); assert.equal(creates, 1);
     r.phones[0].send('round.finish', { roundId: imported.roundId }); assert.match((await r.phones[0].take('error')).reason, /Only the room host/);
@@ -377,5 +396,57 @@ test('in-flight held input from a replaced round is discarded without warning or
     assert.deepEqual(phone.packets.filter(p=>p.type==='error'),[]);const playerId=r.welcomes[0].playerId,position=(p:Packet)=>p.publicView.players.find((a:any)=>a.id===playerId).x,baseline=position(await phone.take('game.snapshot',p=>p.roundId===current));
     phone.send('input.state',{roundId:current,seq:1,payload:{x:-1,y:0,boost:false}});await delay(10);time+=100;const moved=await phone.take('game.snapshot',p=>p.roundId===current&&p.serverTime===time);assert(position(moved)<baseline);
     phone.send('game.action',{roundId:old,actionId:'still-reject-reliable',payload:{}});assert.match((await phone.take('action.ack',p=>p.actionId==='still-reject-reliable')).reason,/old round/);
+  }finally{await h.close();}
+});
+
+test('cancelled-load readiness is silent and cannot ready a replacement round', async () => {
+  const h = await harness(); try {
+    const r = await room(h);
+    r.host.send('game.select', { gameId: 'test-a' }); await r.host.take('room.state', p => p.room.phase === 'lobby');
+    for (const phone of r.phones) phone.send('room.ready', { ready: true });
+    await r.host.take('room.state', p => p.room.players.every((player: any) => player.ready));
+    r.host.send('round.start'); const old = (await r.host.take('round.prepare')).roundId;
+    r.phones[0].send('round.failed', { roundId: old }); await r.host.take('room.state', p => p.room.phase === 'lobby' && p.room.notice?.includes('could not load'));
+    r.host.send('round.ready', { roundId: old }); r.host.send('clock.ping', { clientTime: 501 }); await r.host.take('clock.pong');
+    assert(!r.host.packets.some(p => p.type === 'error'));
+    for (const phone of r.phones) phone.send('room.ready', { ready: true });
+    await r.host.take('room.state', p => p.room.players.every((player: any) => player.ready));
+    r.host.send('round.start'); const fresh = (await r.host.take('round.prepare')).roundId;
+    r.host.send('round.ready', { roundId: fresh }); r.phones[0].send('round.ready', { roundId: fresh });
+    r.phones[1].send('round.ready', { roundId: old }); r.phones[1].send('clock.ping', { clientTime: 502 }); await r.phones[1].take('clock.pong');
+    assert.equal(h.party.roomView().startAt, null); assert(!r.phones[1].packets.some(p => p.type === 'error'));
+    r.phones[1].send('round.ready', { roundId: fresh }); await r.host.take('game.snapshot', p => p.roundId === fresh);
+    r.host.send('round.ready', { roundId: fresh }); r.host.send('clock.ping', { clientTime: 503 }); await r.host.take('clock.pong');
+    assert.equal(h.party.roomView().phase, 'playing'); assert(!r.host.packets.some(p => p.type === 'error'));
+  } finally { await h.close(); }
+});
+
+test('per-seat lobby drafts validate readiness, retain reconnects/settings, reject stale edits and reset on replay/game switch', async () => {
+  let created: unknown[]=[];
+  const game=makeGame('lobby-game');game.rules={...rules,
+    parseLobbyChoice(raw,ready){const p=raw as {pick:string|null};if(!p||Object.keys(p).length!==1||p.pick!==null&&!['red','blue'].includes(p.pick)||ready&&!p.pick)throw Error('Choose first');return {pick:p.pick};},
+    create(ctx,settings){created=ctx.players.map(p=>p.lobbyChoice);return rules.create(ctx,settings);}};
+  const h=await harness([game,makeGame('other')]);
+  try {
+    const r=await room(h);r.host.send('game.select',{gameId:'lobby-game'});let v=(await r.host.take('room.state',p=>p.room.phase==='lobby')).room;
+    const choose=(peer:Peer,pick:string|null,id=v.lobbyId)=>peer.send('lobby.choice',{lobbyId:id,payload:{pick}});
+    r.phones[0].send('room.ready',{ready:true,lobbyId:v.lobbyId});assert.match((await r.phones[0].take('error')).reason,/Choose first/);
+    choose(r.host,'red');assert.match((await r.host.take('error')).reason,/no longer available/);
+    choose(r.phones[0],null);await r.host.take('room.state',p=>p.room.players[0]?.lobbyChoice?.pick===null);
+    choose(r.phones[0],'red');await r.host.take('room.state',p=>p.room.players[0]?.lobbyChoice?.pick==='red');
+    r.phones[0].send('room.ready',{ready:true,lobbyId:v.lobbyId});await r.host.take('room.state',p=>p.room.players[0]?.ready);
+    choose(r.phones[0],'blue');assert.match((await r.phones[0].take('error')).reason,/Not ready/);
+    r.phones[0].socket.close();await r.host.take('room.state',p=>!p.room.players[0]?.connected);
+    const resumed=await h.connect();resumed.send('room.rejoin',{code:r.hostWelcome.room.code,token:r.welcomes[0].token});const welcome=await resumed.take('room.welcome');assert.deepEqual(welcome.room.players[0]?.lobbyChoice,{pick:'red'});r.phones[0]=resumed;
+    const oldId=v.lobbyId;r.host.send('game.select',{gameId:'lobby-game',settings:{}});v=(await r.host.take('room.state',p=>p.room.lobbyId&&p.room.lobbyId!==oldId)).room;assert.deepEqual(v.players[0]?.lobbyChoice,{pick:'red'});
+    choose(resumed,'blue',oldId);assert.match((await resumed.take('error')).reason,/no longer available/);
+    choose(r.phones[1],'blue');await r.host.take('room.state',p=>p.room.players[1]?.lobbyChoice?.pick==='blue');
+    for(const p of r.phones)p.send('room.ready',{ready:true,lobbyId:v.lobbyId});await r.host.take('room.state',p=>p.room.players.length===2&&p.room.players.every((p:any)=>p.ready));
+    r.host.send('round.start');const prep=await r.host.take('round.prepare');for(const p of [r.host,...r.phones])p.send('round.ready',{roundId:prep.roundId});await r.host.take('game.snapshot',p=>p.roundId===prep.roundId);assert.deepEqual(created,[{pick:'red'},{pick:'blue'}]);
+    choose(resumed,'blue');assert.match((await resumed.take('error')).reason,/no longer available/);
+    for(const [i,p] of r.phones.entries()){p.send('game.action',{roundId:prep.roundId,actionId:String(i),payload:{turnId:'turn-1'}});assert.equal((await p.take('action.ack')).accepted,true);}await r.host.take('round.results');
+    let revision=h.party.roomView().revision;r.host.send('game.select',{gameId:'lobby-game'});await r.host.take('room.state',p=>p.room.revision>revision&&p.room.phase==='lobby'&&p.room.roundId===null);assert.ok(h.party.roomView().players.every(p=>p.lobbyChoice===undefined&&!p.ready));
+    revision=h.party.roomView().revision;r.host.send('game.select',{gameId:'other'});await r.host.take('room.state',p=>p.room.revision>revision&&p.room.gameId==='other');assert.equal(h.party.roomView().lobbyId,undefined);
+    revision=h.party.roomView().revision;r.host.send('game.select',{gameId:'lobby-game'});await r.host.take('room.state',p=>p.room.revision>revision&&p.room.gameId==='lobby-game');assert.ok(h.party.roomView().players.every(p=>p.lobbyChoice===undefined));
   }finally{await h.close();}
 });

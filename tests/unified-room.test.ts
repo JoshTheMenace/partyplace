@@ -5,8 +5,8 @@ import { WebSocket } from 'ws';
 import { createRoomServer, validateManifest, assertSerializable } from '../apps/party-server/src/room-server';
 import { games } from '../apps/party-server/src/registry';
 import { rules as kart } from '../packages/games/kart-party/src/server';
-import { botInput } from '../modules/kart-party/game/simulation';
-import type { TrackId } from '../modules/kart-party/game/types';
+import { botInput } from '../packages/games/kart-party/src/engine/simulation';
+import type { TrackId } from '../packages/games/kart-party/src/engine/types';
 const delay = (ms: number) => new Promise(done => setTimeout(done, ms));
 class Peer {
   packets: any[] = [];

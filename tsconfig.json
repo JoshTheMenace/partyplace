@@ -22,9 +22,9 @@
   "include": [
     "apps",
     "packages",
+    "game-modules/packages",
     "tests",
     "vite.config.ts",
-    "modules/kart-party",
     "vite.kart.config.ts"
   ]
 }

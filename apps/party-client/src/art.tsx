@@ -1,11 +1,14 @@
+import { SkyClashArt } from '../../../packages/games/sky-clash/src/art';
 import type { CSSProperties } from 'react';
 export const gameLooks: Record<string, { tone: 'sun' | 'coral' | 'sky' | 'lime' | 'grape'; verb: string }> = {
+  'sky-clash': { tone: 'sun', verb: 'Build damage. Send rivals flying.' },
   'blockwild': { tone: 'lime', verb: 'Mine. Build. Make a world.' }, 'kitchen-rush': { tone: 'coral', verb: 'A little heat. A lot of teamwork.' },
   'quip-clash': { tone: 'sun', verb: 'Write. Vote. Laugh.' }, 'sketch-bluff': { tone: 'sky', verb: 'Draw a little deception.' },
   'tall-tales': { tone: 'grape', verb: 'Make the unbelievable believable.' }, 'shirt-show': { tone: 'coral', verb: 'Wear your weirdest idea.' },
   'odd-one-in': { tone: 'lime', verb: 'Someone is winging it.' }, 'quiz-panic': { tone: 'coral', verb: 'Think fast. Stay in it.' },
 };
 export function GameArt({ id, className = '' }: { id: string; className?: string }) {
+  if (id === 'sky-clash') return <SkyClashArt className={`kp-game-art ${className}`}/>;
   const tone = gameLooks[id]?.tone ?? 'sun';
   return <svg viewBox="0 0 300 130" aria-hidden="true" className={`kp-game-art ${className}`} style={{ '--art-accent': `var(--kp-${tone})` } as CSSProperties}>
     <ellipse cx="150" cy="121" rx="96" ry="7" fill="var(--kp-ink)" opacity=".3" />

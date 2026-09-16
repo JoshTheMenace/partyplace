@@ -28,6 +28,10 @@ npm run serve:isolated -- my-library-build 4360
 
 Open the printed address. Choose a game directly, or host a room and invite phones with its QR/code. A shared screen can be a laptop or TV. Solo and no-TV filters currently match Kart Party; the other eight games require a shared display and at least two players.
 
+## Local host download
+
+`npm run package:local-host -- <run-name>` builds a self-contained macOS folder under `output/local-host/<run>/`: `PartyPlay.app` with the client, all nine games, the curated catalog and a bundled Node runtime, plus `Stop PartyPlay.command`. Double-click the app on a Mac with nothing installed; the browser opens the shared display and phones join over the same Wi-Fi. Saves live in `~/Library/Application Support/PartyPlay`. Hosted and local builds are one application: `/api/health` reports `host: "hosted"` or `"local"`, and only a local host offers the loopback-only stop endpoint. Details, verification and limits: [docs/LOCAL-HOST.md](docs/LOCAL-HOST.md).
+
 ## Games
 
 | Game | Players | Play style | Status |
@@ -51,7 +55,7 @@ Phones need a network that can reach the laptop. Guest Wi-Fi isolation, VPNs and
 - `apps/party-client`: dashboard, catalog, shared room and round UI.
 - `apps/party-server`: one HTTP server routing the collection and Kart Party protocols.
 - `packages/games/<id>`: eight collection modules with manifest, rules, UI and tests.
-- `modules/kart-party`: imported racing engine, UI and network module, with its CSS built separately.
+- `packages/games/kart-party`: Kart Party adapter, racing engine, tests and public assets, together beside the other games.
 - `packages/party-*`: shared contracts, transport, UI and 3D support.
 - `public/games/kart-party`: existing Kart fonts/music; other game assets live in their own folders.
 
@@ -72,4 +76,4 @@ Use one browser QA owner at a time, prefer headless, and keep at most three visi
 
 Kart's existing music is included. Music for the other games remains reserved for the user. No deployment, staging, commits or pushes are implied by local builds.
 
-Project architecture and contribution guidance: [agent handbook](docs/party-platform/AGENT-HANDBOOK.md), [UI contract](.agents/skills/party-platform-ui/SKILL.md), [3D readiness](docs/party-platform/3D-READINESS.md), [Kart module](modules/kart-party/README.md).
+Project architecture and contribution guidance: [agent handbook](docs/party-platform/AGENT-HANDBOOK.md), [UI contract](.agents/skills/party-platform-ui/SKILL.md), [3D readiness](docs/party-platform/3D-READINESS.md), [Kart Party](packages/games/kart-party/README.md).

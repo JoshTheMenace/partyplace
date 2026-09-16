@@ -6,7 +6,7 @@ import WebSocket from 'ws';
 import QRCode from 'qrcode';
 import { createRoomHub } from '../apps/party-server/src/room-hub';
 import { games } from '../apps/party-server/src/registry';
-import { createPartyServer } from '../modules/kart-party/server/party-server';
+import { createPartyServer } from '../packages/games/kart-party/src/standalone-server/party-server';
 
 test('collection and Kart sockets coexist on one server; Kart QR uses its mounted route', async () => {
   const server = createServer((req,res) => { void kart.handleRequest(req,res); });
