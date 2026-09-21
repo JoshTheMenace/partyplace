@@ -2,6 +2,7 @@ import { SkyClashArt } from '../../../packages/games/sky-clash/src/art';
 import type { CSSProperties } from 'react';
 export const gameLooks: Record<string, { tone: 'sun' | 'coral' | 'sky' | 'lime' | 'grape'; verb: string }> = {
   'ichi': { tone: 'coral', verb: 'One card. So many possibilities.' },
+  'night-job': { tone: 'sky', verb: 'Slip in. Stick together. Get out.' },
   'sky-clash': { tone: 'sun', verb: 'Build damage. Send rivals flying.' },
   'blockwild': { tone: 'lime', verb: 'Mine. Build. Make a world.' }, 'kitchen-rush': { tone: 'coral', verb: 'A little heat. A lot of teamwork.' },
   'quip-clash': { tone: 'sun', verb: 'Write. Vote. Laugh.' }, 'sketch-bluff': { tone: 'sky', verb: 'Draw a little deception.' },
@@ -9,6 +10,19 @@ export const gameLooks: Record<string, { tone: 'sun' | 'coral' | 'sky' | 'lime' 
   'odd-one-in': { tone: 'lime', verb: 'Someone is winging it.' }, 'quiz-panic': { tone: 'coral', verb: 'Think fast. Stay in it.' },
 };
 export function GameArt({ id, className = '' }: { id: string; className?: string }) {
+  if (id === 'night-job') return <svg viewBox="0 0 300 130" aria-hidden="true" className={`kp-game-art ${className}`} shapeRendering="crispEdges">
+    <rect x="22" y="8" width="256" height="114" fill="#071727"/>
+    <path d="M38 24h224v82H38ZM38 58h64V24m0 58v24m42-82v36h44m-44 22v24m44-82v82m0-38h74" fill="none" stroke="#23516a" strokeWidth="2"/>
+    <path d="M102 44v14m0 24v12m42-46v12m44 12v12" stroke="#68d9dd" strokeWidth="4"/>
+    <path d="m82 84 70-48v80Z" fill="#78d955" opacity=".13"/>
+    <path d="m182 88 44-56 24 70Z" fill="#ffd24a" opacity=".12"/>
+    <rect x="202" y="24" width="48" height="46" fill="#143a50" stroke="#68d9dd" strokeWidth="3"/>
+    <rect x="210" y="32" width="32" height="30" fill="#081c2d" stroke="#3f8198" strokeWidth="2"/>
+    <path d="M222 40h10v12h-10Zm5-5v5m0 12v5m-15-11h10m10 0h8" fill="none" stroke="#ffd24a" strokeWidth="3"/>
+    <path d="m96 90 22 0 0-20 38 0 0 20 34 0" fill="none" stroke="#68d9dd" strokeWidth="2" strokeDasharray="4 5"/>
+    {[[72, 72, '#78d955'], [148, 82, '#b58aff'], [174, 94, '#ff5748']].map(([x, y, color]) => <g key={String(color)} transform={`translate(${x} ${y})`}><path d="M2-10h12v4h4V4h-4v8H2V4h-4V-6h4Z" fill={String(color)}/><path d="M0-4h16V2H0Zm2 16v5m12-5v5" stroke="#071727" strokeWidth="4"/><path d="M4-1h3m4 0h3" stroke="#fff6e5" strokeWidth="2"/></g>)}
+    <path d="m54 35 3-4h8l3 4v8H54Zm3 11h8m-4 8v6" fill="#ffd24a"/><path d="M44 112h26m8 0h12m156-6h14v8h-14" stroke="#68d9dd" strokeWidth="2"/>
+  </svg>;
   if (id === 'sky-clash') return <SkyClashArt className={`kp-game-art ${className}`}/>;
   const tone = gameLooks[id]?.tone ?? 'sun';
   return <svg viewBox="0 0 300 130" aria-hidden="true" className={`kp-game-art ${className}`} style={{ '--art-accent': `var(--kp-${tone})` } as CSSProperties}>

@@ -46,6 +46,25 @@
           ]
         },
         {
+          "id": "night-job",
+          "title": "Night Job",
+          "description": "Three original pixel-art heists. Eight specialists. Get the goods and your whole crew out.",
+          "category": "Co-op",
+          "status": "ready",
+          "players": { "min": 1, "max": 4 },
+          "supportsSolo": false,
+          "requiresSharedDisplay": true,
+          "cooperative": true,
+          "controls": ["Touch", "Phone controllers"],
+          "playTime": "Quick heists · replayable",
+          "launch": "room",
+          "searchTerms": ["heist", "stealth", "thieves", "cooperative", "pixel art", "specialists"],
+          "tags": ["co-op", "stealth", "pixel art", "1–4 players"],
+          "creator": { "name": "PartyPlay" },
+          "detail": "Choose from eight specialists across three original pixel-art heists. Use 1–4 phones as touch controllers and a TV or browser as the shared map display.",
+          "capabilities": ["browser-play", "shared-display", "phone-controllers", "touch"]
+        },
+        {
           "id": "kart-party",
           "title": "Kart Party",
           "description": "Four big courses. Ten tiny rivals. Drift, grab an item, and race for the finish.",

@@ -2,6 +2,7 @@ import type { GameClientModule } from '../../../packages/party-ui/src/index';
 export type LoadedClient = GameClientModule<any, any, any, any, any>;
 export const clients: Record<string, () => Promise<LoadedClient>> = {
   'ichi': () => import('../../../packages/games/ichi/src/client').then(module => module.client),
+  'night-job': () => import('../../../packages/games/night-job/src/client').then(module => module.client),
   'phonedig': () => import('../../../packages/games/phonedig/src/client').then(module => module.client),
   'hotpot': () => import('../../../packages/games/hotpot/src/client').then(module => module.client),
 
