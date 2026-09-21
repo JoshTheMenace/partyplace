@@ -7,6 +7,45 @@
       "description": "Play solo or bring friends. A growing collection of local multiplayer games.",
       "games": [
         {
+          "id": "ichi",
+          "title": "Ichi",
+          "description": "One card away. Match colors, plan your last move, and remix the rules with eight optional expansions.",
+          "category": "Party",
+          "status": "ready",
+          "players": {
+            "min": 2,
+            "max": 10
+          },
+          "supportsSolo": false,
+          "requiresSharedDisplay": true,
+          "cooperative": false,
+          "controls": [
+            "Phone controllers"
+          ],
+          "playTime": "10\u201325 min",
+          "launch": "room",
+          "searchTerms": [
+            "cards",
+            "strategy",
+            "uno",
+            "expansions"
+          ],
+          "tags": [
+            "cards",
+            "strategy",
+            "expansions"
+          ],
+          "creator": {
+            "name": "PartyPlay"
+          },
+          "detail": "Match colors or symbols, complete secret missions, and choose your favorite optional rule packs. A shared screen and 2\u201310 phones.",
+          "capabilities": [
+            "browser-play",
+            "shared-display",
+            "phone-controllers"
+          ]
+        },
+        {
           "id": "kart-party",
           "title": "Kart Party",
           "description": "Four big courses. Ten tiny rivals. Drift, grab an item, and race for the finish.",

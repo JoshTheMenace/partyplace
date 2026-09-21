@@ -4,6 +4,7 @@ import type { CatalogGame, CatalogCapability } from '../../../packages/party-cat
 export type { CatalogGame, CatalogCapability, CatalogSource } from '../../../packages/party-catalog/src/index';
 export type CatalogFilter = 'all' | 'solo' | 'shared-screen' | 'no-tv' | 'party' | 'co-op' | 'in-progress';
 const details: Record<string, Pick<CatalogGame, 'category' | 'status' | 'playTime' | 'searchTerms'>> = {
+  'ichi': { category: 'Party', status: 'ready', playTime: '10–25 min', searchTerms: ['cards', 'strategy', 'uno', 'expansions', 'ichi'] },
   'phonedig': { category: 'Co-op', status: 'ready', playTime: '10–30 min / run', searchTerms: ['mining', 'digging', 'arcade', 'cooperative', 'pixel art'] },
   'hotpot': { category: 'Party', status: 'ready', playTime: '10–20 min', searchTerms: ['cards', 'ingredients', 'sets', 'strategy', 'bots'] },
   'starship-scramble': { category: 'Co-op', status: 'ready', playTime: '30 beacons · save anytime', searchTerms: ['space', 'fleet', 'strategy', 'ships', 'expedition', 'cooperative'] },
