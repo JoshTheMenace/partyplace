@@ -10,7 +10,7 @@ const details: Record<string, Pick<CatalogGame, 'category' | 'status' | 'playTim
   'hotpot': { category: 'Party', status: 'ready', playTime: '10–20 min', searchTerms: ['cards', 'ingredients', 'sets', 'strategy', 'bots'] },
   'starship-scramble': { category: 'Co-op', status: 'ready', playTime: '30 beacons · save anytime', searchTerms: ['space', 'fleet', 'strategy', 'ships', 'expedition', 'cooperative'] },
   'island-settlers': { category: 'Party', status: 'in-progress', playTime: 'About 60 min · varies', searchTerms: ['catan', 'settlers', 'board game', 'seafarers', 'connect', 'strategy', 'trading'] },
-  'sky-clash': { category: 'Party', status: 'in-progress', playTime: '15 min / match · unlimited option', searchTerms: ['melee', 'smash', 'mario', 'fox', 'falco', 'kirby', 'marth', 'bowser', '33 fighters', 'combat', '3d'] },
+  'sky-clash': { category: 'Party', status: 'in-progress', playTime: '5–8 min / match', searchTerms: ['melee', 'smash', 'fighting', 'mario', 'fox', 'falco', 'kirby', 'marth', 'bowser', 'pikachu', '33 fighters', '30 stages', 'cpu', 'combat', '3d'] },
   'quip-clash': { category:'Party',status:'ready',playTime:'10–15 min',searchTerms:['jokes','writing','voting'] },
   'sketch-bluff': { category:'Party',status:'ready',playTime:'10–15 min',searchTerms:['drawing','bluffing','art'] },
   'tall-tales': { category:'Party',status:'ready',playTime:'8–12 min',searchTerms:['trivia','lies','bluffing'] },

@@ -439,7 +439,7 @@
         {
           "id": "sky-clash",
           "title": "Sky Clash",
-          "description": "Choose from 33 fighters. Build damage. Launch your rivals off Cloudbreak.",
+          "description": "33 Melee fighters, 30 stages. Rack up damage and launch your friends off the stage.",
           "category": "Party",
           "status": "in-progress",
           "players": {
@@ -452,21 +452,24 @@
           "controls": [
             "Phone controllers"
           ],
-          "playTime": "15 min / match \u00b7 unlimited option",
+          "playTime": "5\u20138 min / match",
           "launch": "room",
           "searchTerms": [
             "melee",
             "smash",
+            "fighting",
+            "mario",
             "fox",
-            "falco",
-            "fighter",
+            "marth",
+            "kirby",
+            "cpu",
             "combat",
             "3d"
           ],
           "creator": {
             "name": "PartyPlay"
           },
-          "detail": "A 33-fighter roster: 27 forms with published Melee movement and normal attack data, plus six adapted bonus fighters. Authored replacement models, reconstructed specials and collision, a shared display and landscape phone controllers.",
+          "detail": "All 33 Melee fighter kinds: 27 with their imported Melee attributes and attack scripts, plus six bonus fighters. Thirty Melee stages, new Blender models with four costumes each, CPU rivals, a shared display and landscape phone controllers.",
           "capabilities": [
             "browser-play",
             "shared-display",
