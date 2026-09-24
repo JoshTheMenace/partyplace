@@ -7,7 +7,7 @@ These instructions apply throughout this project.
 - Read [the game-building handbook](docs/party-platform/AGENT-HANDBOOK.md) before game or platform work. [IMPLEMENTATION.md](docs/party-platform/IMPLEMENTATION.md) maps the current runtime; exported TypeScript types and source define the actual API.
 - Apply [party-platform-ui](.agents/skills/party-platform-ui/SKILL.md) when creating or changing UI. For 3D or continuous-input games, also read [3D readiness](docs/party-platform/3D-READINESS.md).
 - For a new 3D game, reuse the implemented runtime and [Scene Lab example](packages/games/scene-lab/README.md). Use the isolated build/QA commands in the 3D guide; do not expose the development fixture in a normal game build.
-- This repository already has a shared launcher, room server, client, UI package, and nine catalog games. All nine use the shared room runtime. Kart Party’s adapter and original racing engine both live under `packages/games/kart-party`. Do not recreate the platform from the historical Kart Party proposal or invent missing reference APIs.
+- This repository already has a shared launcher, room server, client, UI package, and nine catalog games. All nine use the shared room runtime. Kart Party is a ground-up rebuild (2026-09-23) whose simulation, renderer and UI live under `packages/games/kart-party`; start with its `DESIGN.md`. Do not recreate the platform from the historical Kart Party proposal or invent missing reference APIs.
 
 ## Editing and validation
 

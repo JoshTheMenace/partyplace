@@ -1,4 +1,4 @@
-import { serveStaticFile } from '../../../packages/games/kart-party/src/standalone-server/static-response';
+import { serveStaticFile } from './static-response';
 import { serveWorldSave } from './world-http';
 import { createServer } from 'node:http';
 import { existsSync, statSync } from 'node:fs';

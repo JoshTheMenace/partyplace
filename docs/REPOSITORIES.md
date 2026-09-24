@@ -38,4 +38,4 @@ Edit `catalog/sources.json` in the platform. See [the curator guide](../catalog/
 
 Generated builds, local saves, browser profiles, tunnel binaries, session logs and QA screenshots remain local under ignored `output/`. Authored source, research, instructions, assets and package lockfile are versioned. No credentials or environment files belong in either repository. Historical QA documents may refer to local evidence paths; the repository-split verification is recorded in `docs/verification/repository-split.md`.
 
-Kart Party follows the same `packages/games/<id>/` layout as the other games. Its former standalone engine, tests and assets have been consolidated under `packages/games/kart-party`; there is no separate `modules/kart-party` checkout. The `public/games/kart-party` link in the games repository preserves its public URLs.
+Kart Party follows the same `packages/games/<id>/` layout as the other games. Its rebuilt engine, tests, Blender sources and assets all live under `packages/games/kart-party`; there is no separate `modules/kart-party` checkout or standalone server. The `public/games/kart-party` link in the games repository preserves its public URLs.

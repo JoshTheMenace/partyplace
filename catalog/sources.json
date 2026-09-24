@@ -67,7 +67,7 @@
         {
           "id": "kart-party",
           "title": "Kart Party",
-          "description": "Four big courses. Ten tiny rivals. Drift, grab an item, and race for the finish.",
+          "description": "Five toybox courses, finishing on Rainbow Road, and eight racers. Drift for mini-turbos, grab items, and race friends or CPUs.",
           "category": "Racing",
           "status": "ready",
           "players": {
@@ -100,7 +100,7 @@
           "creator": {
             "name": "PartyPlay"
           },
-          "detail": "Race solo against CPU drivers or bring friends into a room. Play on this screen with a keyboard or touch controls, or use phones as controllers.",
+          "detail": "Race solo against CPU drivers or bring up to ten friends. Play on this screen with a keyboard, touch or gamepad, or use phones as controllers. Up to four racers share the TV in split screen; bigger groups race on their own phones.",
           "capabilities": [
             "browser-play",
             "solo",

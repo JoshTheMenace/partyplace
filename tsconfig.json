@@ -24,7 +24,6 @@
     "packages",
     "game-modules/packages",
     "tests",
-    "vite.config.ts",
-    "vite.kart.config.ts"
+    "vite.config.ts"
   ]
 }

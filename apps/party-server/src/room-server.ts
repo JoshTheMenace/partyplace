@@ -224,8 +224,8 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
             requireHost(identity); if (phase !== 'picker' && phase !== 'lobby' && phase !== 'results') throw new Error('End the current round before selecting a game.');
             const game = registry.get(string(message.gameId)); if (!game) throw new Error('Unknown game.');
             const validated = game.rules.validateSettings(message.settings ?? {}); assertSerializable(validated);
-            const keepChoices = phase === 'lobby' && selected?.manifest.id === game.manifest.id;
-            if (!keepChoices) for (const seat of identities.values()) delete seat.lobbyChoice;
+            // Settings edits and Play again keep each seat's draft; Ready still resets, so players confirm it.
+            if (selected?.manifest.id !== game.manifest.id) for (const seat of identities.values()) delete seat.lobbyChoice;
             clearRound(); selected = game; settings = validated; phase = 'lobby'; notice = null;
             if (!game.manifest.supportsSolo) identity.playerId = null;
             else if (message.play === true && players().length === 0) { identity.playerId = identity.id; identity.name = 'Host'; }

@@ -421,7 +421,7 @@ test('cancelled-load readiness is silent and cannot ready a replacement round', 
   } finally { await h.close(); }
 });
 
-test('per-seat lobby drafts validate readiness, retain reconnects/settings, reject stale edits and reset on replay/game switch', async () => {
+test('per-seat lobby drafts validate readiness, retain reconnects/settings, reject stale edits and keep on replay but reset on game switch', async () => {
   let created: unknown[]=[];
   const game=makeGame('lobby-game');game.rules={...rules,
     parseLobbyChoice(raw,ready){const p=raw as {pick:string|null};if(!p||Object.keys(p).length!==1||p.pick!==null&&!['red','blue'].includes(p.pick)||ready&&!p.pick)throw Error('Choose first');return {pick:p.pick};},
@@ -445,7 +445,7 @@ test('per-seat lobby drafts validate readiness, retain reconnects/settings, reje
     r.host.send('round.start');const prep=await r.host.take('round.prepare');for(const p of [r.host,...r.phones])p.send('round.ready',{roundId:prep.roundId});await r.host.take('game.snapshot',p=>p.roundId===prep.roundId);assert.deepEqual(created,[{pick:'red'},{pick:'blue'}]);
     choose(resumed,'blue');assert.match((await resumed.take('error')).reason,/no longer available/);
     for(const [i,p] of r.phones.entries()){p.send('game.action',{roundId:prep.roundId,actionId:String(i),payload:{turnId:'turn-1'}});assert.equal((await p.take('action.ack')).accepted,true);}await r.host.take('round.results');
-    let revision=h.party.roomView().revision;r.host.send('game.select',{gameId:'lobby-game'});await r.host.take('room.state',p=>p.room.revision>revision&&p.room.phase==='lobby'&&p.room.roundId===null);assert.ok(h.party.roomView().players.every(p=>p.lobbyChoice===undefined&&!p.ready));
+    let revision=h.party.roomView().revision;r.host.send('game.select',{gameId:'lobby-game'});await r.host.take('room.state',p=>p.room.revision>revision&&p.room.phase==='lobby'&&p.room.roundId===null);assert.deepEqual(h.party.roomView().players.map(p=>[p.lobbyChoice,p.ready]),[[{pick:'red'},false],[{pick:'blue'},false]]);
     revision=h.party.roomView().revision;r.host.send('game.select',{gameId:'other'});await r.host.take('room.state',p=>p.room.revision>revision&&p.room.gameId==='other');assert.equal(h.party.roomView().lobbyId,undefined);
     revision=h.party.roomView().revision;r.host.send('game.select',{gameId:'lobby-game'});await r.host.take('room.state',p=>p.room.revision>revision&&p.room.gameId==='lobby-game');assert.ok(h.party.roomView().players.every(p=>p.lobbyChoice===undefined));
   }finally{await h.close();}

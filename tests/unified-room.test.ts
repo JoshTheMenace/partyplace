@@ -5,8 +5,8 @@ import { WebSocket } from 'ws';
 import { createRoomServer, validateManifest, assertSerializable } from '../apps/party-server/src/room-server';
 import { games } from '../apps/party-server/src/registry';
 import { rules as kart } from '../packages/games/kart-party/src/server';
-import { botInput } from '../packages/games/kart-party/src/engine/simulation';
-import type { TrackId } from '../packages/games/kart-party/src/engine/types';
+import { botInput } from '../packages/games/kart-party/src/sim/ai';
+import { TRACK_IDS } from '../packages/games/kart-party/src/tracks/index';
 const delay = (ms: number) => new Promise(done => setTimeout(done, ms));
 class Peer {
   packets: any[] = [];
@@ -28,7 +28,7 @@ test('one host plays all three solo games, reconnects and changes to Kart with t
       host.send('round.start'); const preparation = await host.take('round.prepare'); host.send('round.ready', {roundId:preparation.roundId});
       const snap = await host.take('game.snapshot', p => p.roundId === preparation.roundId);
       assert.equal((snap.publicView.players ?? snap.publicView.racers.filter((p:any) => !p.bot)).length,1);
-      host.send('input.state', {roundId:preparation.roundId,seq:1,payload:id === 'kart-party' ? {throttle:true,steer:1} : {x:1,y:0}});
+      host.send('input.state', {roundId:preparation.roundId,seq:1,payload:id === 'kart-party' ? {steer:1} : {x:1,y:0}});
       if (id === 'blockwild') { host.send('round.finish', {roundId:preparation.roundId}); await host.take('room.state', p => p.room.phase === 'results'); }
       else { host.send('round.abort', {roundId:preparation.roundId}); await host.take('room.state', p => p.room.phase === 'lobby'); }
       const next = await connect(); next.send('room.rejoin', {code:original.room.code,token:original.token}); const resumed = await next.take('room.welcome'); assert.equal(resumed.playerId,original.clientId); host = next;
@@ -55,12 +55,12 @@ test('ten phone seats survive Kitchen → Kart → Kitchen; a host cannot take a
     }
   } finally { await room.close(); await new Promise<void>(done => server.close(() => done())); }
 });
-for (const count of [1,10]) for (const track of ['coast','canyon','midnight','rainbow'] as TrackId[]) test(`Kart adapter: ${count} players finish ${track} and replay`, () => {
+for (const count of [1,10]) for (const track of TRACK_IDS) test(`Kart adapter: ${count} players finish ${track} and replay`, () => {
   const settings = kart.validateSettings({track,laps:1,speedClass:200}), ctx = {roomId:'room',roundId:'race',nowMs:1000,seed:892,players:Array.from({length:count},(_,i) => ({id:`p${i}`,name:`Player${i}`,color:'#fff'}))};
   const race = kart.create(ctx,settings);
   for (let i=0;i<37000 && race.phase !== 'results';i++) kart.tick(race,new Map(race.racers.filter(p => !p.bot).map(p => [p.id,botInput(race,p)])),1/60,ctx.nowMs+i*1000/60);
   assert(kart.outcome(race).complete); assert.equal(kart.outcome(race).rows.length,count); assert(race.racers.some(p => !p.bot && p.finishTime !== null));
-  assertSerializable(kart.publicView(race,{nowMs:1000000,phase:'results'}));
+  const view = kart.publicView(race,{nowMs:1000000,phase:'results'}); assertSerializable(view); assert.equal(view.players.length,count);
   const replay = kart.create({...ctx,roundId:'again'},settings); assert.equal(replay.phase,'countdown'); assert(replay.racers.every(p => p.finishTime === null));
 });
 test('solo manifests require a one-player minimum', () => {
