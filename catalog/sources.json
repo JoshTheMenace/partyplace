@@ -9,7 +9,7 @@
         {
           "id": "ichi",
           "title": "Ichi",
-          "description": "One card away. Match colors, plan your last move, and remix the rules with eight optional expansions.",
+          "description": "Match colors, stack the penalties and shout Ichi! before anyone catches you on your last card.",
           "category": "Party",
           "status": "ready",
           "players": {
@@ -28,12 +28,12 @@
             "cards",
             "strategy",
             "uno",
-            "expansions"
+            "stacking"
           ],
           "tags": [
             "cards",
             "strategy",
-            "expansions"
+            "party"
           ],
           "creator": {
             "name": "PartyPlay"
