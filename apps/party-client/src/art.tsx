@@ -1,9 +1,11 @@
 import { SkyClashArt } from '../../../packages/games/sky-clash/src/art';
+import { StarshipArt } from '../../../packages/games/starship-scramble/src/art';
 import type { CSSProperties } from 'react';
 export const gameLooks: Record<string, { tone: 'sun' | 'coral' | 'sky' | 'lime' | 'grape'; verb: string }> = {
   'ichi': { tone: 'coral', verb: 'One card. So many possibilities.' },
   'night-job': { tone: 'sky', verb: 'Slip in. Stick together. Get out.' },
   'sky-clash': { tone: 'sun', verb: 'Build damage. Send rivals flying.' },
+  'starship-scramble': { tone: 'coral', verb: 'Fly together. Fire together. Break the Armada.' },
   'blockwild': { tone: 'lime', verb: 'Mine. Build. Make a world.' }, 'kitchen-rush': { tone: 'coral', verb: 'A little heat. A lot of teamwork.' },
   'quip-clash': { tone: 'sun', verb: 'Write. Vote. Laugh.' }, 'sketch-bluff': { tone: 'sky', verb: 'Draw a little deception.' },
   'tall-tales': { tone: 'grape', verb: 'Make the unbelievable believable.' }, 'shirt-show': { tone: 'coral', verb: 'Wear your weirdest idea.' },
@@ -24,6 +26,7 @@ export function GameArt({ id, className = '' }: { id: string; className?: string
     <path d="m54 35 3-4h8l3 4v8H54Zm3 11h8m-4 8v6" fill="#ffd24a"/><path d="M44 112h26m8 0h12m156-6h14v8h-14" stroke="#68d9dd" strokeWidth="2"/>
   </svg>;
   if (id === 'sky-clash') return <SkyClashArt className={`kp-game-art ${className}`}/>;
+  if (id === 'starship-scramble') return <StarshipArt className={className}/>;
   const tone = gameLooks[id]?.tone ?? 'sun';
   return <svg viewBox="0 0 300 130" aria-hidden="true" className={`kp-game-art ${className}`} style={{ '--art-accent': `var(--kp-${tone})` } as CSSProperties}>
     <ellipse cx="150" cy="121" rx="96" ry="7" fill="var(--kp-ink)" opacity=".3" />
