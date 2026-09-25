@@ -1,5 +1,14 @@
 # Night Job verification
 
+## Night Job v2 rebuild (2026-09-23)
+
+The game was rebuilt: a Three.js TV scene with blueprint fog and raycast sight, a new simulation (guards with suspicion, radio, dodgeable aimed shots; dogs; civilians; cameras, lasers and circuits), three new 44–48-tile maps, a Blender model kit, and a new HUD, controller, lobby and results. The design contract is `packages/games/night-job/DESIGN.md`. Everything below this section describes the previous 2D version and is historical.
+
+- Checks: `npm run typecheck` and `npm run lint` pass. `npm test` gives 1,614 tests: 1,613 pass, 1 skipped, 0 fail, including 60 Night Job game tests and the platform room/registry tests.
+- Final isolated build `nj-final-a`. On a real room with a headless GPU TV at 1920×1080: a 4-phone Velvet heist (three WebSocket bot phones plus one Playwright phone), two rounds with Play again, results and awards, 0 browser errors. Renderer p50 8.3 ms, p95 9.8 ms, 98 draw calls. 4-phone tours of Glasshouse and Ferry, 0 errors.
+- Review: independent simulation and client reviews plus a real-game playtest produced 44 findings, which were fixed or declined with reasons by the owning agents (evidence under ignored `output/nj-rebuild/`).
+- Limits: emulated phones only, no physical-device or TV-distance check, sounds not reviewed by ear, and difficulty tuned with bots rather than human playtests.
+
 2026-09-20 (America/Denver). Implemented in the games submodule, integrated into the platform library. See the [game README](../../packages/games/night-job/README.md), [research](../party-platform/MONACO-RESEARCH.md), and [design plan](../game-plans/night-job.md).
 
 ## Current polish release

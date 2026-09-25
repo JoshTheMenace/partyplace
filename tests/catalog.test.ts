@@ -37,5 +37,5 @@ test('Night Job discovery and room metadata agree on its roster, controls and de
   assert.equal(room.supportsSolo, false); assert.equal(room.requiresSharedDisplay, true);
   assert.deepEqual(room.controls, ['Touch', 'Phone controllers']);
   assert.deepEqual(room.capabilities, ['browser-play', 'shared-display', 'phone-controllers', 'touch']);
-  assert.deepEqual(filterCatalog(catalog, 'heist pixel', 'co-op').map(game => game.id), ['night-job']);
+  assert.deepEqual(filterCatalog(catalog, 'heist 3d', 'co-op').map(game => game.id), ['night-job']);
 });
