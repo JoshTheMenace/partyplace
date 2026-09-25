@@ -391,7 +391,7 @@
         {
           "id": "island-settlers",
           "title": "Island Settlers",
-          "description": "Trade, build, and sail with private phone hands and a shared island board.",
+          "description": "Trade, build and sail a Catan-style island with private phone hands, plus Seafarers, Cities & Knights and more.",
           "category": "Strategy",
           "status": "in-progress",
           "players": {
@@ -414,6 +414,10 @@
             "catan",
             "settlers",
             "seafarers",
+            "cities and knights",
+            "explorers",
+            "pirates",
+            "barbarians",
             "connect",
             "trading",
             "board game"
@@ -426,7 +430,7 @@
           "creator": {
             "name": "PartyPlay"
           },
-          "detail": "An early Catan-inspired game with Standard and Connect-style rounds, plus an Open Seas scenario using Seafarers mechanics. Play alone against CPUs on the host device, or invite friends with private phone hands. CPUs fill empty seats to the chosen table size. Larger-player layouts and Connect are adaptations.",
+          "detail": "A Catan-inspired game for 1\u201310 with Standard turns or Connect-style rounds. Mix in Seafarers, Cities & Knights, Explorers & Pirates, the Traders & Barbarians scenarios (Fishing, Rivers, Caravans, Barbarian Attack, Deliveries) and two variants. Play alone against CPUs on the host device, or invite friends with private phone hands. CPUs fill empty seats to the chosen table size. 7\u201310 player layouts and Connect are adaptations.",
           "capabilities": [
             "solo",
             "keyboard",
