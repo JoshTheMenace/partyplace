@@ -479,7 +479,7 @@
         {
           "id": "starship-scramble",
           "title": "Starship Scramble",
-          "description": "Command your own ship. Explore, upgrade, and fight together as a fleet.",
+          "description": "Captain your own starship in a co-op fleet. Outrun the Armada, fight together, and topple its flagship.",
           "category": "Co-op",
           "status": "ready",
           "players": {
@@ -494,7 +494,7 @@
             "Touch",
             "Phone controllers"
           ],
-          "playTime": "30 beacons \u00b7 save anytime",
+          "playTime": "20\u201345 min \u00b7 save anytime",
           "launch": "room",
           "searchTerms": [
             "space",
@@ -513,7 +513,7 @@
           "creator": {
             "name": "PartyPlay"
           },
-          "detail": "Every captain commands a separate ship through a shared expedition. Use landscape phones or play solo on this screen. Save a session to continue later.",
+          "detail": "FTL-style co-op for the living room. Each captain flies their own ship: target rooms, break shields with synchronized volleys, beam crew to allies, and race the Crimson Armada across three sectors. Play on landscape phones or solo on this screen. Save to continue later.",
           "capabilities": [
             "browser-play",
             "shared-display",
