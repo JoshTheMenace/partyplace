@@ -19,6 +19,8 @@ import { KartArt } from './dashboard-art';
 import '../../../packages/party-ui/src/style.css';
 const session = new PartySession({ deferConnection: true });
 const music = new MusicBus();
+/** Last name typed on this device, so a player who closed the browser can rejoin their seat by name. */
+const NAME_KEY = 'party.player.name';
 class GameBoundary extends Component<{ children: ReactNode; onFailure(): void }, { error: boolean }> {
   state = { error: false };
   static getDerivedStateFromError() { return { error: true }; }
@@ -28,7 +30,7 @@ class GameBoundary extends Component<{ children: ReactNode; onFailure(): void },
 function App() {
   const state = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const { room, identity, snapshot } = state;
-  const [name, setName] = useState('');
+  const [name, setName] = useState(() => { try { return localStorage.getItem(NAME_KEY) ?? ''; } catch { return ''; } });
   const curated = useCatalog(), myLibrary = useLibrary();
   const [joinOpen, setJoinOpen] = useState(false);
   const [pendingGame, setPendingGame] = useState<string | null>(null);
@@ -102,7 +104,7 @@ function App() {
   // A host racing on their own phone needs the full-screen button as much as a joined phone does.
   const handheld = usePhoneOrientation().phone, handheldPlayer = phone || (!!identity?.playerId && handheld);
   usePhoneViewport(phone && !!module?.immersivePhone);
-  const joinForm = <form className="kp-join-form" onSubmit={event => { event.preventDefault(); session.join('room.join', { code: code.toUpperCase(), name: name.trim(), role: query.current.has('display') ? 'display' : 'controller' }); }}>
+  const joinForm = <form className="kp-join-form" onSubmit={event => { event.preventDefault(); try { localStorage.setItem(NAME_KEY, name.trim()); } catch { /* Storage unavailable. */ } session.join('room.join', { code: code.toUpperCase(), name: name.trim(), role: query.current.has('display') ? 'display' : 'controller' }); }}>
     <label>Room code<TextInput value={code} maxLength={6} autoCapitalize="characters" autoComplete="off" onChange={event => setCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))} required /></label>
     {!query.current.has('display') && <label>Your name<TextInput value={name} maxLength={16} autoComplete="nickname" autoFocus={deepJoin} onChange={event => setName(event.target.value)} required /></label>}
     <ArcadeButton size="lg" tone="sky" disabled={!canJoin || code.length !== 6 || (!query.current.has('display') && !name.trim())}>{query.current.has('display') ? 'Join as display' : 'Join the room'}</ArcadeButton>

@@ -98,6 +98,15 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
   function beginIfReady() { if (!round || phase !== 'preparing' || round.startAt !== null || [...round.required].some(id => !round!.loaded.has(id) || !identities.get(id)?.socket)) return; round.startAt = now() + (options.startDelayMs ?? 1000); broadcastRoom(); for (const identity of identities.values()) send(identity.socket, 'round.begin', { roundId: round.id, startAt: round.startAt }); }
   function requireHost(identity: Identity) { if (identity.id !== hostId) throw new Error('Only the room host can do that.'); }
   function requireRound(message: Wire) { if (!round || message.roundId !== round.id) throw new Error('This action belongs to an old round.'); return round; }
+  /** Attach a socket to an existing seat (saved credential or name takeover) and restore its round presence. */
+  function resume(found: Identity, socket: WebSocket) {
+    const previous = found.socket; found.socket = socket; found.seq = -1; found.disconnectedAt = null;
+    if (found.id === hostId && found.playerId && !selected?.rules.parseLobbyChoice) found.ready = true;
+    previous?.close(4001, 'Seat resumed on another connection');
+    if (round && phase === 'preparing' && round.required.has(found.id)) { round.loaded.delete(found.id); round.startAt = null; }
+    if (round && found.playerId && round.players.includes(found.playerId)) { round.inputs.set(found.playerId, round.game.rules.neutralInput()); round.inputAt.delete(found.playerId); if (round.state !== null) round.game.rules.onPresenceChange(round.state, found.playerId, true, now()); }
+    return found;
+  }
   function welcome(identity: Identity) { send(identity.socket, 'room.welcome', { clientId: identity.id, playerId: identity.playerId, token: identity.token, room: view(), games: games.map(game => game.manifest), ...(round?.game.actionLimits?.history === 'window' ? { nextActionSequence: (round.actionWindows.get(identity.playerId ?? '')?.highestSequence ?? 0) + 1 } : {}) }); snapshot(identity); }
   function authorizeSave(token: string, roundId: string) {
     const identity = [...identities.values()].find(item => item.token === token);
@@ -179,19 +188,23 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
           if (message.type === 'room.rejoin') {
             const token = string(message.token, 128); const found = [...identities.values()].find(item => item.token === token);
             if (!found || message.code !== code) throw new Error('REJOIN: Saved seat expired. Join the room again.');
-            const previous = found.socket; found.socket = socket; identity = found; if (identity.id === hostId && identity.playerId && !selected?.rules.parseLobbyChoice) identity.ready = true; identity.seq = -1; identity.disconnectedAt = null; previous?.close(4001, 'Seat resumed on another connection');
-            if (round && phase === 'preparing' && round.required.has(identity.id)) { round.loaded.delete(identity.id); round.startAt = null; }
-            if (round && identity.playerId && round.players.includes(identity.playerId)) { round.inputs.set(identity.playerId, round.game.rules.neutralInput()); round.inputAt.delete(identity.playerId); if (round.state !== null) round.game.rules.onPresenceChange(round.state, identity.playerId, true, now()); }
+            identity = resume(found, socket);
           } else if (message.type === 'room.create' || message.type === 'room.join') {
             if (message.type === 'room.create' && roomId) throw new Error('A room is already open. Use its join code.');
             if (message.type === 'room.join' && (!roomId || message.code !== code)) throw new Error('Room code not found. Check the six characters.');
             const display = message.type === 'room.create' || message.role === 'display';
-            if (!display && players().length >= 10) throw new Error('All ten seats are occupied. Ask the host to remove a disconnected player.');
             if (display && [...identities.values()].filter(item => !item.playerId).length >= 12) throw new Error('Display limit reached.');
             const name = display ? 'Shared display' : string(message.name, 16).trim(); if (!name) throw new Error('Enter a player name.');
-            const id = randomUUID(); identity = { id, token: randomBytes(32).toString('hex'), playerId: display ? null : id, name, color: display ? COLORS[0] : COLORS[players().length], ready: false, socket, seq: -1, disconnectedAt: null };
-            identities.set(id, identity);
-            if (message.type === 'room.create') { roomId = randomUUID(); code = options.code ?? Array.from({ length: 6 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[randomInt(31)]).join(''); hostId = id; }
+            // A lost browser session rejoins by name: a matching disconnected seat (never the host's) is taken over.
+            const same = display ? undefined : players().find(item => item.id !== hostId && item.name.toLocaleLowerCase() === name.toLocaleLowerCase());
+            if (same?.socket) throw new Error(`${same.name} is already playing. Pick another name, or wait a few seconds if that was you.`);
+            if (same) { same.token = randomBytes(32).toString('hex'); identity = resume(same, socket); }
+            else {
+              if (!display && players().length >= 10) throw new Error('All ten seats are occupied. Ask the host to remove a disconnected player.');
+              const id = randomUUID(); identity = { id, token: randomBytes(32).toString('hex'), playerId: display ? null : id, name, color: display ? COLORS[0] : COLORS[players().length], ready: false, socket, seq: -1, disconnectedAt: null };
+              identities.set(id, identity);
+            }
+            if (message.type === 'room.create') { roomId = randomUUID(); code = options.code ?? Array.from({ length: 6 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[randomInt(31)]).join(''); hostId = identity.id; }
           } else throw new Error('Join or resume the room first.');
           clearTimeout(authenticationTimeout); broadcastRoom(); welcome(identity); return;
         }

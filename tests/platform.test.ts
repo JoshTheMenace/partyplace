@@ -450,3 +450,20 @@ test('per-seat lobby drafts validate readiness, retain reconnects/settings, reje
     revision=h.party.roomView().revision;r.host.send('game.select',{gameId:'lobby-game'});await r.host.take('room.state',p=>p.room.revision>revision&&p.room.gameId==='lobby-game');assert.ok(h.party.roomView().players.every(p=>p.lobbyChoice===undefined));
   }finally{await h.close();}
 });
+
+test('a lost browser session rejoins its seat by name; connected names and the host seat cannot be taken', async () => {
+  const h = await harness(); try {
+    const r = await room(h, 10); const code = r.hostWelcome.room.code; const id = await start(h, r);
+    const taken = await h.connect(); taken.send('room.join', { code, role: 'controller', name: 'Player 2' });
+    assert.match((await taken.take('error')).reason, /already playing/);
+    r.phones[0].socket.close(); await r.host.take('room.state', packet => packet.room.players.some((p: any) => p.name === 'Player 1' && !p.connected));
+    const fresh = await h.connect(); fresh.send('room.join', { code, role: 'controller', name: '  player 1 ' });
+    const welcome = await fresh.take('room.welcome');
+    assert.equal(welcome.playerId, r.welcomes[0].playerId); assert.notEqual(welcome.token, r.welcomes[0].token);
+    assert.equal(h.party.roomView().players.length, 10); assert(h.party.roomView().players.every(p => p.connected));
+    const restored = await fresh.take('game.snapshot', packet => packet.roundId === id);
+    assert.equal(restored.privateView.secret, `private:${r.welcomes[0].playerId}`);
+    const stale = await h.connect(); stale.send('room.rejoin', { code, token: r.welcomes[0].token });
+    assert.match((await stale.take('error')).reason, /Saved seat expired/);
+  } finally { await h.close(); }
+});

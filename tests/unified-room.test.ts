@@ -67,3 +67,18 @@ test('solo manifests require a one-player minimum', () => {
   const manifest = games.find(g => g.manifest.id === 'kitchen-rush')!.manifest;
   validateManifest(manifest); assert.throws(() => validateManifest({...manifest,players:{min:2,max:10}}));
 });
+
+test('a phone named like the seated host never takes over the host seat or its authority', async () => {
+  const server = createServer(), room = createRoomServer(server, games, { startDelayMs: 5, tickMs: 5 });
+  await new Promise<void>(done => server.listen(0, '127.0.0.1', done));
+  const connect = async () => { const socket = new WebSocket(`ws://127.0.0.1:${(server.address() as {port:number}).port}/ws`), peer = new Peer(socket); await new Promise<void>(done => socket.once('open', done)); return peer; };
+  try {
+    const host = await connect(); host.send('room.create'); const original = await host.take('room.welcome');
+    host.send('game.select', { gameId: 'blockwild', play: true }); await host.take('room.welcome', p => p.room.gameId === 'blockwild');
+    host.socket.close(); await delay(30);
+    const phone = await connect(); phone.send('room.join', { code: original.room.code, role: 'controller', name: 'host' });
+    const welcome = await phone.take('room.welcome');
+    assert.notEqual(welcome.clientId, original.clientId); assert.notEqual(welcome.room.hostId, welcome.clientId);
+    assert.equal(room.roomView().players.length, 2);
+  } finally { await room.close(); await new Promise<void>(done => server.close(() => done())); }
+});
