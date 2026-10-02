@@ -2,7 +2,7 @@
 
 Edit `catalog/sources.json` to add, change or remove listings. This file is read by the running server, separately from the compiled website. Discover refreshes every 30 seconds while visible, when returning to the tab, and when **Refresh sources** is pressed. No rebuild or restart is needed for catalog edits.
 
-The nine PartyPlay games are seeded under **PartyPlay originals**. A new browser starts with an empty **My Library**. Adding a game saves its ID and listing metadata in that browser's local storage. It does not launch, install or download a game. Removing a library entry does not delete its game saves. Libraries do not yet sync across devices or different site addresses. If a listing leaves the catalog, saved library entries remain visible but cannot launch until it returns.
+The installed PartyPlay games are seeded under **PartyPlay originals**. A new browser starts with an empty **My Library**. Adding a game saves its ID and listing metadata in that browser's local storage. It does not launch, install or download a game. Removing a library entry does not delete its game saves. Libraries do not yet sync across devices or different site addresses. If a listing leaves the catalog, saved library entries remain visible but cannot launch until it returns.
 
 ## Add a game manually
 
@@ -42,7 +42,7 @@ This example is documentation only; replace the example URLs with your chosen ga
 
 `launch` determines what Play does:
 
-- `room`: launches a game already installed in the PartyPlay runtime. Its ID must match an existing registered game. Use this for the nine originals; listing arbitrary source code does not install it.
+- `room`: launches a game already installed in the PartyPlay runtime. Its ID must match an existing registered game. Use this for the installed originals; listing arbitrary source code does not install it.
 - `external`: opens `playUrl` in a new tab on the creator's site. These are manually authored listings, with no URL importer, code fetching, embedding or build service. A GitHub repository page belongs in `sourceUrl`; use the actual deployed game for `playUrl`.
 - `unavailable`: a details-only listing people can save to their library. Use this when you have source information but no playable release. Omit `playUrl`.
 

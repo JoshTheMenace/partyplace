@@ -5,7 +5,7 @@
 
 Both repositories are private. The platform references a specific games commit as a Git submodule at `game-modules/`. Game contents are stored only in the games repository's Git history. The platform contains directory symlinks at the old `packages/` and `public/games` paths so imports and build commands continue to work. `packages/party-catalog` remains in the platform because catalog metadata is independent of the game runtime.
 
-This is a repository boundary. The currently installed nine games still build into the playable application through its trusted room adapter. It is not an arbitrary-game importer or a separate deployment service.
+This is a repository boundary. The currently installed games still build into the playable application through its trusted room adapter. It is not an arbitrary-game importer or a separate deployment service.
 
 ## Fresh checkout
 

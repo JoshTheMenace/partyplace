@@ -33,7 +33,7 @@ test('one host plays all three solo games, reconnects and changes to Kart with t
       else { host.send('round.abort', {roundId:preparation.roundId}); await host.take('room.state', p => p.room.phase === 'lobby'); }
       const next = await connect(); next.send('room.rejoin', {code:original.room.code,token:original.token}); const resumed = await next.take('room.welcome'); assert.equal(resumed.playerId,original.clientId); host = next;
     }
-    host.send('game.select', {gameId:'quip-clash'}); const party = await host.take('room.welcome', p => p.room.gameId === 'quip-clash'); assert.equal(party.playerId,null); assert.equal(party.room.code,original.room.code);
+    host.send('game.select', {gameId:'hijinks'}); const party = await host.take('room.welcome', p => p.room.gameId === 'hijinks'); assert.equal(party.playerId,null); assert.equal(party.room.code,original.room.code);
     host.send('room.play', {play:true}); await host.take('error'); assert.equal(room.roomView().players.length,0);
   } finally { await room.close(); await new Promise<void>(done => server.close(() => done())); }
 });

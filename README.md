@@ -30,7 +30,7 @@ Open the printed address. Choose a game directly, or host a room and invite phon
 
 ## Local host download
 
-`npm run package:local-host -- <run-name>` builds a self-contained macOS folder under `output/local-host/<run>/`: `PartyPlay.app` with the client, all nine games, the curated catalog and a bundled Node runtime, plus `Stop PartyPlay.command`. Double-click the app on a Mac with nothing installed; the browser opens the shared display and phones join over the same Wi-Fi. Saves live in `~/Library/Application Support/PartyPlay`. Hosted and local builds are one application: `/api/health` reports `host: "hosted"` or `"local"`, and only a local host offers the loopback-only stop endpoint. Details, verification and limits: [docs/LOCAL-HOST.md](docs/LOCAL-HOST.md).
+`npm run package:local-host -- <run-name>` builds a self-contained macOS folder under `output/local-host/<run>/`: `PartyPlay.app` with the client, all installed games, the curated catalog and a bundled Node runtime, plus `Stop PartyPlay.command`. Double-click the app on a Mac with nothing installed; the browser opens the shared display and phones join over the same Wi-Fi. Saves live in `~/Library/Application Support/PartyPlay`. Hosted and local builds are one application: `/api/health` reports `host: "hosted"` or `"local"`, and only a local host offers the loopback-only stop endpoint. Details, verification and limits: [docs/LOCAL-HOST.md](docs/LOCAL-HOST.md).
 
 ## Games
 
@@ -39,12 +39,7 @@ Open the printed address. Choose a game directly, or host a room and invite phon
 | Kart Party | 1–10 | Solo or party kart racing; keyboard, touch and phone controllers | Playable |
 | Blockwild | 2–10 | Open-ended voxel sandbox; personal first-person views | Playable |
 | Kitchen Rush | 2–10 | Cooperative cooking across ten stages | Playable |
-| Quip Clash | 3–10 | Write punchlines and vote | Playable |
-| Sketch Bluff | 3–10 | Draw, invent captions and find the truth | Playable |
-| Tall Tales | 3–10 | Invent believable lies around unusual facts | Playable |
-| Shirt Show | 3–10 | Draw art, write slogans and vote on shirts | Playable |
-| Odd One In | 4–10 | Find the guest bluffing through the questions | Playable |
-| Quiz Panic | 2–10 | Trivia under pressure | Playable |
+| Hijinks | 2–10 | A night of party minigames: write, draw, bluff and vote for trophies | In development |
 
 Collection games share one room and preserve seats when switching games. Kart Party has its own race lobby and code on the same server at `/kart-party/`. Opening it from an existing collection room asks the host to close that room first. Its menu has an **All games** link back to the dashboard. The original external Kart Party checkout and its existing sessions remain untouched.
 

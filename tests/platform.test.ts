@@ -150,37 +150,45 @@ test('drawing and LAN address boundaries', () => {
   assert.equal(addresses.preferredUrl, 'http://192.168.1.12:4317'); assert(!JSON.stringify(addresses).includes('evil.example'));
 });
 
-test('all six real modules finish timeout-driven ten-player rounds; Quip → Sketch → Quip keeps sockets and drafts private', async () => {
+test('Hijinks hosts a ten-player night: avatars, menu votes, VIP lock, private projections and trophies at results', async () => {
   const { games } = await import('../apps/party-server/src/registry');
+  const { MINIS, eligible } = await import('../packages/games/hijinks/src/minis/catalog');
+  const { SERVERS } = await import('../packages/games/hijinks/src/minis/registry.server');
+  const playable = MINIS.find(info => Object.hasOwn(SERVERS, info.id) && eligible(info, 10)), unready = MINIS.find(info => !Object.hasOwn(SERVERS, info.id));
   let time = Date.now();
   const h = await harness(games, { now: () => time, startDelayMs: 0, prepareTimeoutMs: 20000 });
   try {
-    const r = await room(h, 10);
-    for (const gameId of ['quip-clash', 'sketch-bluff', 'quip-clash', 'tall-tales', 'shirt-show', 'odd-one-in', 'quiz-panic']) {
-      const id = await start(h, r, gameId);
-      const first = await r.phones[0].take('game.snapshot', packet => packet.roundId === id);
-      if (gameId === 'quip-clash') {
-        const payload = { type: 'draft', turnId: first.publicView.turnId, questionId: first.privateView.questions[0].id, text: 'PRIVATE_DRAFT_SOCKET_SENTINEL' };
-        r.phones[0].send('game.action', { roundId: id, actionId: 'draft', payload }); assert.equal((await r.phones[0].take('action.ack', packet => packet.roundId === id)).accepted, true);
-        const self = await r.phones[0].take('game.snapshot', packet => packet.roundId === id && JSON.stringify(packet.privateView).includes('PRIVATE_DRAFT_SOCKET_SENTINEL')); assert(self);
-        const resumed = await h.connect(); resumed.send('room.rejoin', { code: r.hostWelcome.room.code, token: r.welcomes[0].token }); await resumed.take('room.welcome'); const restored = await resumed.take('game.snapshot', packet => packet.roundId === id); assert(JSON.stringify(restored.privateView).includes('PRIVATE_DRAFT_SOCKET_SENTINEL')); r.phones[0] = resumed;
-        r.phones[0].send('game.action', { roundId: id, actionId: 'draft', payload }); assert.equal((await r.phones[0].take('action.ack', packet => packet.roundId === id)).accepted, true);
-        for (const other of [r.host, ...r.phones.slice(1)]) for (const packet of other.packets) assert(!JSON.stringify(packet).includes('PRIVATE_DRAFT_SOCKET_SENTINEL'));
-      }
-      if (gameId === 'sketch-bluff') {
-        const drawing = { strokes: [{ color: DRAWING_COLORS[0], width: 0.012, points: [{ x: 0.1, y: 0.1 }, { x: 0.8, y: 0.8 }] }] };
-        r.phones[0].send('game.action', { roundId: id, actionId: 'draw', payload: { type: 'drawing', turnId: first.publicView.turnId, drawing } }); assert.equal((await r.phones[0].take('action.ack', packet => packet.roundId === id)).accepted, true);
-        assert(first.privateView.prompt); for (const packet of r.host.packets.filter(packet => packet.roundId === id)) assert(!JSON.stringify(packet).includes(first.privateView.prompt));
-      }
-      let transitions = 0;
-      while (h.party.roomView().phase === 'playing' && transitions++ < 180) { time += 120000; await delay(8); }
-      assert.equal(h.party.roomView().phase, 'results', `${gameId}: ${h.party.roomView().notice}`);
-      const results = await r.host.take('round.results', packet => packet.roundId === id); assert.equal(results.outcome.rows.length, 10);
-      assert.equal(results.privateView, null); assert.equal(h.party.roomView().code, r.hostWelcome.room.code);
-      r.host.send('room.returnToPicker'); await r.host.take('room.state', packet => packet.room.phase === 'picker' && packet.room.revision > 0);
-      // Bound test-side history too; the real client retains only its current snapshot.
-      for (const peer of [r.host, ...r.phones]) peer.packets.length = 0;
+    const r = await room(h, 10), ids = r.welcomes.map(w => w.playerId as string), seq = ids.map(() => 0);
+    r.host.send('game.select', { gameId: 'hijinks', settings: {} });
+    const { lobbyId, actionWindow } = (await r.host.take('room.state', p => p.room.gameId === 'hijinks' && p.room.phase === 'lobby')).room; assert.equal(actionWindow, 256);
+    r.phones.forEach((phone, i) => { phone.send('lobby.choice', { lobbyId, payload: { avatar: 15 - i } }); phone.send('room.ready', { ready: true, lobbyId }); });
+    await r.host.take('room.state', p => p.room.players.length === 10 && p.room.players.every((player: any) => player.ready));
+    r.host.send('round.start'); const { roundId } = await r.host.take('round.prepare');
+    for (const peer of [r.host, ...r.phones]) peer.send('round.ready', { roundId });
+    const latest = async (peer: Peer, phase?: string) => { for (let i = 0; i < 300; i++) { const snap = peer.packets.filter(p => p.type === 'game.snapshot' && p.roundId === roundId).at(-1); if (snap && (!phase || snap.publicView.phase === phase)) return snap; await delay(5); } throw new Error(`No ${phase ?? ''} snapshot`); };
+    const act = async (i: number, payload: Record<string, unknown>) => { const actionId = String(++seq[i]); r.phones[i]!.send('game.action', { roundId, actionId, retireThrough: seq[i]! - 1, payload }); return r.phones[i]!.take('action.ack', p => p.actionId === actionId); };
+    const menu = (await latest(r.host, 'menu')).publicView;
+    assert.deepEqual(menu.players.map((p: any) => [p.id, p.avatar]), ids.map((id, i) => [id, 15 - i])); assert.equal(menu.vip, ids[0]); assert.equal(menu.mini, null);
+    assert.match((await act(1, { k: 'lock' })).reason, /Only the VIP/); assert.match((await act(0, { k: 'lock' })).reason, /Vote for a game first/);
+    assert.match((await act(2, { k: 'vote', game: 'no-such-game' })).reason, /not in the library/);
+    if (unready) assert.match((await act(2, { k: 'vote', game: unready.id })).reason, /not ready yet/);
+    if (playable) {
+      for (let i = 1; i < 10; i++) assert.equal((await act(i, { k: 'vote', game: playable.id })).accepted, true);
+      assert.equal((await latest(r.phones[1]!)).privateView.vote, playable.id); assert.equal((await latest(r.phones[0]!)).privateView.vote, null);
+      assert.equal((await act(0, { k: 'lock' })).accepted, true);
+      const intro = (await latest(r.host, 'intro')).publicView; assert.equal(intro.current.id, playable.id);
+      assert.equal((await act(0, { k: 'skip', session: intro.current.session })).accepted, true); await latest(r.host, 'mini');
+      for (let step = 0; step < 400 && (await latest(r.host)).publicView.phase === 'mini'; step++) { time += 5000; await delay(8); }
+      const podium = (await latest(r.host, 'podium')).publicView; assert.equal(podium.played.length, 1);
+      assert.match((await act(1, { k: 'next', session: podium.current.session })).reason, /Only the VIP/);
+      assert.equal((await act(0, { k: 'next', session: podium.current.session })).accepted, true); await latest(r.host, 'menu');
     }
+    for (const packet of r.host.packets) if (packet.type === 'game.snapshot') assert.equal(packet.privateView, null);
+    for (const [i, phone] of r.phones.entries()) for (const packet of phone.packets) if (packet.type === 'game.snapshot' && packet.publicView?.phase === 'menu') assert.equal(packet.privateView.vote, packet.publicView.menu.votes[ids[i]!] ?? null);
+    assert.match((await act(1, { k: 'end' })).reason, /Only the VIP/); assert.equal((await act(0, { k: 'end' })).accepted, true);
+    const { outcome } = await r.host.take('round.results', p => p.roundId === roundId);
+    assert.equal(outcome.complete, true); assert.equal(outcome.rows.length, 10); assert(outcome.rows.every((row: any) => /troph/.test(row.label)));
+    assert.equal(outcome.winners.length > 0, outcome.rows.some((row: any) => row.score > 0)); assert.equal(h.party.roomView().phase, 'results');
   } finally { await h.close(); }
 });
 

@@ -192,174 +192,9 @@
           ]
         },
         {
-          "id": "quip-clash",
-          "title": "Quip Clash",
-          "description": "Write ridiculous answers. Vote for your favorites.",
-          "players": {
-            "min": 3,
-            "max": 10
-          },
-          "supportsSolo": false,
-          "requiresSharedDisplay": true,
-          "cooperative": false,
-          "controls": [
-            "Phone controllers"
-          ],
-          "launch": "room",
-          "creator": {
-            "name": "PartyPlay"
-          },
-          "detail": "Write ridiculous answers. Vote for your favorites.",
-          "capabilities": [
-            "browser-play",
-            "shared-display",
-            "phone-controllers"
-          ],
-          "category": "Party",
-          "status": "ready",
-          "playTime": "10\u201315 min",
-          "searchTerms": [
-            "jokes",
-            "writing",
-            "voting"
-          ]
-        },
-        {
-          "id": "sketch-bluff",
-          "title": "Sketch Bluff",
-          "description": "Draw a prompt, bluff the room, and spot the truth.",
-          "players": {
-            "min": 3,
-            "max": 10
-          },
-          "supportsSolo": false,
-          "requiresSharedDisplay": true,
-          "cooperative": false,
-          "controls": [
-            "Phone controllers"
-          ],
-          "launch": "room",
-          "creator": {
-            "name": "PartyPlay"
-          },
-          "detail": "Draw a prompt, bluff the room, and spot the truth.",
-          "capabilities": [
-            "browser-play",
-            "shared-display",
-            "phone-controllers"
-          ],
-          "category": "Party",
-          "status": "ready",
-          "playTime": "10\u201315 min",
-          "searchTerms": [
-            "drawing",
-            "bluffing",
-            "art"
-          ]
-        },
-        {
-          "id": "tall-tales",
-          "title": "Tall Tales",
-          "description": "Invent a convincing lie. Find the real answer.",
-          "players": {
-            "min": 3,
-            "max": 10
-          },
-          "supportsSolo": false,
-          "requiresSharedDisplay": true,
-          "cooperative": false,
-          "controls": [
-            "Phone controllers"
-          ],
-          "launch": "room",
-          "creator": {
-            "name": "PartyPlay"
-          },
-          "detail": "Invent a convincing lie. Find the real answer.",
-          "capabilities": [
-            "browser-play",
-            "shared-display",
-            "phone-controllers"
-          ],
-          "category": "Party",
-          "status": "ready",
-          "playTime": "8\u201312 min",
-          "searchTerms": [
-            "trivia",
-            "lies",
-            "bluffing"
-          ]
-        },
-        {
-          "id": "shirt-show",
-          "title": "Shirt Show",
-          "description": "Turn drawings and slogans into questionable fashion.",
-          "players": {
-            "min": 3,
-            "max": 10
-          },
-          "supportsSolo": false,
-          "requiresSharedDisplay": true,
-          "cooperative": false,
-          "controls": [
-            "Phone controllers"
-          ],
-          "launch": "room",
-          "creator": {
-            "name": "PartyPlay"
-          },
-          "detail": "Turn drawings and slogans into questionable fashion.",
-          "capabilities": [
-            "browser-play",
-            "shared-display",
-            "phone-controllers"
-          ],
-          "category": "Party",
-          "status": "ready",
-          "playTime": "15\u201320 min",
-          "searchTerms": [
-            "drawing",
-            "shirts",
-            "slogans"
-          ]
-        },
-        {
-          "id": "odd-one-in",
-          "title": "Odd One In",
-          "description": "One player is missing the clue. Find them.",
-          "players": {
-            "min": 4,
-            "max": 10
-          },
-          "supportsSolo": false,
-          "requiresSharedDisplay": true,
-          "cooperative": false,
-          "controls": [
-            "Phone controllers"
-          ],
-          "launch": "room",
-          "creator": {
-            "name": "PartyPlay"
-          },
-          "detail": "One player is missing the clue. Find them.",
-          "capabilities": [
-            "browser-play",
-            "shared-display",
-            "phone-controllers"
-          ],
-          "category": "Party",
-          "status": "ready",
-          "playTime": "10\u201315 min",
-          "searchTerms": [
-            "hidden role",
-            "bluffing",
-            "deduction"
-          ]
-        },
-        {
-          "id": "quiz-panic",
-          "title": "Quiz Panic",
-          "description": "Fast trivia. Friendly rivalry.",
+          "id": "hijinks",
+          "title": "Hijinks",
+          "description": "A whole night of party games in one box: write, draw, bluff and vote your way to the most trophies.",
           "players": {
             "min": 2,
             "max": 10
@@ -374,7 +209,7 @@
           "creator": {
             "name": "PartyPlay"
           },
-          "detail": "Fast trivia. Friendly rivalry.",
+          "detail": "A whole night of party games in one box: write, draw, bluff and vote your way to the most trophies.",
           "capabilities": [
             "browser-play",
             "shared-display",
@@ -382,10 +217,17 @@
           ],
           "category": "Party",
           "status": "ready",
-          "playTime": "10\u201315 min",
+          "playTime": "All night",
           "searchTerms": [
-            "quiz",
-            "trivia"
+            "jokes",
+            "writing",
+            "drawing",
+            "trivia",
+            "bluffing",
+            "voting",
+            "minigames",
+            "party pack",
+            "trophies"
           ]
         },
         {
