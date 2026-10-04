@@ -12,6 +12,7 @@ export const clients: Record<string, () => Promise<LoadedClient>> = {
   'blockwild': () => import('../../../packages/games/blockwild/src/client').then(module => module.client),
   'kitchen-rush': () => import('../../../packages/games/kitchen-rush/src/client').then(module => module.client),
   'hijinks': () => import('../../../packages/games/hijinks/src/client').then(module => module.client),
+  'trolley-court': () => import('../../../packages/games/trolley-court/src/client').then(module => module.client),
 };
 
 if (import.meta.env.VITE_PARTY_QA === '1') clients['scene-lab'] = () => import('../../../packages/games/scene-lab/src/client').then(module => module.client);

@@ -231,6 +231,24 @@
           ]
         },
         {
+          "id": "trolley-court",
+          "title": "Trolley Court",
+          "description": "Two teams stack the tracks with bystanders, culprits and twists, then plead with the Conductor. Someone pulls the lever. Fewest deaths wins.",
+          "players": { "min": 3, "max": 10 },
+          "supportsSolo": false,
+          "requiresSharedDisplay": true,
+          "cooperative": false,
+          "controls": ["Phone controllers"],
+          "launch": "room",
+          "creator": { "name": "PartyPlay" },
+          "detail": "Two teams stack the tracks with bystanders, culprits and twists, then plead with the Conductor. Someone pulls the lever. Fewest deaths wins.",
+          "capabilities": ["browser-play", "shared-display", "phone-controllers"],
+          "category": "Party",
+          "status": "ready",
+          "playTime": "20\u201340 min",
+          "searchTerms": ["cards", "trolley problem", "debate", "arguing", "teams", "judge", "dilemma", "writing"]
+        },
+        {
           "id": "island-settlers",
           "title": "Island Settlers",
           "description": "Trade, build and sail a Catan-style island with private phone hands, plus Seafarers, Cities & Knights and more.",

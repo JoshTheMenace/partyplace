@@ -12,6 +12,7 @@ const details: Record<string, Pick<CatalogGame, 'category' | 'status' | 'playTim
   'island-settlers': { category: 'Party', status: 'in-progress', playTime: 'About 60 min · varies', searchTerms: ['catan', 'settlers', 'board game', 'seafarers', 'cities and knights', 'explorers', 'pirates', 'barbarians', 'connect', 'strategy', 'trading'] },
   'sky-clash': { category: 'Party', status: 'in-progress', playTime: '5–8 min / match', searchTerms: ['melee', 'smash', 'fighting', 'mario', 'fox', 'falco', 'kirby', 'marth', 'bowser', 'pikachu', '33 fighters', '30 stages', 'cpu', 'combat', '3d'] },
   'hijinks': { category:'Party',status:'ready',playTime:'All night',searchTerms:['jokes','writing','drawing','trivia','bluffing','voting','minigames','party pack','trophies'] },
+  'trolley-court': { category:'Party',status:'ready',playTime:'20–40 min',searchTerms:['cards','trolley problem','debate','arguing','teams','judge','dilemma','writing'] },
   'blockwild': { category:'Sandbox',status:'ready',playTime:'Open-ended',searchTerms:['building','crafting','exploration','creative','survival','3d'] },
   'kitchen-rush': { category:'Co-op',status:'ready',playTime:'3–5 min / level',searchTerms:['cooking','teamwork','campaign','3d'] },
 };

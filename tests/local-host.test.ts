@@ -125,7 +125,7 @@ test('packaged app launches from its bundled runtime, serves games and catalog, 
   try {
     let health: { ok?: boolean; host?: string; games?: string[]; instanceId?: string } | null = null;
     for (let attempt = 0; attempt < 80 && !health; attempt++) { await delay(250); health = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(500) }).then(r => r.json() as Promise<typeof health>).catch(() => null); }
-    assert.ok(health?.ok, 'packaged host answered health'); assert.equal(health!.host, 'local'); assert.equal(health!.games!.length, 11, 'eleven bundled games');
+    assert.ok(health?.ok, 'packaged host answered health'); assert.equal(health!.host, 'local'); assert.equal(health!.games!.length, 12, 'twelve bundled games');
     const catalog = await (await fetch(`http://127.0.0.1:${port}/api/catalog`)).json() as { sources: { games: unknown[] }[] };
     assert.ok(catalog.sources.length >= 1 && catalog.sources[0].games.length >= 9, 'catalog served from the app folder');
     const index = await fetch(`http://127.0.0.1:${port}/`); assert.equal(index.status, 200); assert.match(await index.text(), /<div id="root">/);

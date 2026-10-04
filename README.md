@@ -40,6 +40,7 @@ Open the printed address. Choose a game directly, or host a room and invite phon
 | Blockwild | 2–10 | Open-ended voxel sandbox; personal first-person views | Playable |
 | Kitchen Rush | 2–10 | Cooperative cooking across ten stages | Playable |
 | Hijinks | 2–10 | A night of party minigames: write, draw, bluff and vote for trophies | In development |
+| Trolley Court | 3–10 | Team card game: stack the tracks, plead with the Conductor, fewest deaths wins | In development |
 
 Collection games share one room and preserve seats when switching games. Kart Party has its own race lobby and code on the same server at `/kart-party/`. Opening it from an existing collection room asks the host to close that room first. Its menu has an **All games** link back to the dashboard. The original external Kart Party checkout and its existing sessions remain untouched.
 

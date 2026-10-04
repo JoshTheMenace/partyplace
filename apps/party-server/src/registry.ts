@@ -16,6 +16,8 @@ import { manifest as kitchenManifest } from '../../../packages/games/kitchen-rus
 import { rules as kitchenRules } from '../../../packages/games/kitchen-rush/src/server';
 import { manifest as hijinksManifest } from '../../../packages/games/hijinks/src/manifest';
 import { rules as hijinksRules } from '../../../packages/games/hijinks/src/server';
+import { manifest as trolleyManifest } from '../../../packages/games/trolley-court/src/manifest';
+import { rules as trolleyRules } from '../../../packages/games/trolley-court/src/server';
 import type { RegisteredGame } from './room-server';
 import { manifest as settlersManifest } from '../../../packages/games/island-settlers/src/manifest';
 import { rules as settlersRules } from '../../../packages/games/island-settlers/src/server';
@@ -32,6 +34,7 @@ export const games: RegisteredGame[] = [
   { manifest: kartManifest, rules: kartRules },
   { manifest: blockwildManifest, rules: blockwildRules }, { manifest: kitchenManifest, rules: kitchenRules },
   { manifest: hijinksManifest, rules: hijinksRules, actionLimits: { perPlayer: 256, maxBytes: 32768, history: 'window' } },
+  { manifest: trolleyManifest, rules: trolleyRules, actionLimits: { perPlayer: 1024, maxBytes: 1024, history: 'window' } },
 ];
 
 if (process.env.PARTY_QA === '1') { const [{ manifest }, { rules }] = await Promise.all([import('../../../packages/games/scene-lab/src/manifest'), import('../../../packages/games/scene-lab/src/server')]); games.push({ manifest, rules }); }
