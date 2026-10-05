@@ -14,7 +14,7 @@ export type PartyAppOptions = {
   /** Present only in the packaged local host: enables the loopback-only stop endpoint and labels responses. */
   local?: { instanceId: string; stopToken: string; onStop(): void };
 };
-const mime: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf', '.woff2': 'font/woff2', '.json': 'application/json', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg' };
+const mime: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf', '.woff2': 'font/woff2', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg' };
 /** Only the display running on the hosting computer may stop a local host; phones on the LAN cannot. */
 export const allowsLocalStop = (remoteAddress: string | undefined) => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(remoteAddress ?? '');
 const loopbackName = (hostname: string) => ['localhost', '127.0.0.1', '[::1]'].includes(hostname.toLowerCase());
