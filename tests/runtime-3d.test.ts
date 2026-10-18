@@ -10,13 +10,13 @@ test('fixed steps are identical across irregular scheduling; deadlines survive b
   const clock = new FixedStepClock(0); const times: number[] = []; assert.equal(clock.advance(10000, (dt, now) => { assert.equal(dt, 1 / 60); times.push(now); }), 6);
   assert(clock.droppedMs > 9899); assert(Math.abs(times.at(-1)! - 10000) < 1e-6); assert.throws(() => new FixedStepClock(0, 1000));
 });
-test('held input coalesces bursts, keeps a stationary hold alive, copies values, and releases immediately', () => {
+test('held input sends changes at once within a minimum gap, keeps a stationary hold alive, copies values, and releases immediately', () => {
   const packets: unknown[] = [], channel = new HeldInputChannel((kind, value) => packets.push({ kind, value })); const input = { x: 1 };
   channel.set(input, 0); input.x = 99;
   for (let i = 1; i < 50; i++) channel.set({ x: i }, i);
-  assert.equal(packets.length, 1); assert.deepEqual(packets[0], { kind: 'state', value: { x: 1 } });
-  channel.flush(50); assert.deepEqual(packets[1], { kind: 'state', value: { x: 49 } });
-  for (let time = 100; time <= 2000; time += 50) channel.flush(time); assert.equal(packets.length, 41);
+  assert.deepEqual(packets, [{ kind: 'state', value: { x: 1 } }, { kind: 'state', value: { x: 25 } }]);
+  channel.flush(49); assert.equal(packets.length, 2); channel.flush(50); assert.deepEqual(packets[2], { kind: 'state', value: { x: 49 } });
+  for (let time = 100; time <= 2000; time += 50) channel.flush(time); assert.equal(packets.length, 42);
   channel.release(); assert.deepEqual(packets.at(-1), { kind: 'release', value: undefined }); const count = packets.length;
   channel.release(); channel.flush(5000); assert.equal(packets.length, count);
   channel.set({ x: 1 }, 5001); channel.release(false); channel.flush(6000); assert.equal(packets.length, count + 1);

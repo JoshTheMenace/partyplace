@@ -273,14 +273,14 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
               let window = current.actionWindows.get(identity.playerId);
               if (!window) { window = new ActionWindow(current.game.actionLimits.perPlayer); current.actionWindows.set(identity.playerId, window); }
               const result = window.execute(actionId, message.retireThrough, payload, apply);
-              send(socket, 'action.ack', { roundId: current.id, actionId, ...result }); revision++; break;
+              send(socket, 'action.ack', { roundId: current.id, actionId, ...result }); revision++; current.lastSnapshot = -Infinity; break;
             }
             if (previous) { send(socket, 'action.ack', { roundId: current.id, actionId, ...(previous.payload === payload ? previous.result : { accepted: false, reason: 'Action ID reused with different payload.' }) }); break; }
             const count = current.actionCounts.get(identity.playerId) ?? 0;
             if (count >= (current.game.actionLimits?.perPlayer ?? 256)) throw new Error('Round action limit reached.');
             const result = apply();
             current.acks.set(key, { payload, result }); current.actionCounts.set(identity.playerId, count + 1);
-            send(socket, 'action.ack', { roundId: current.id, actionId, ...result }); revision++; break;
+            send(socket, 'action.ack', { roundId: current.id, actionId, ...result }); revision++; current.lastSnapshot = -Infinity; break;
           }
           case 'input.release':
           case 'input.state': { if (!round || message.roundId !== round.id || phase !== 'playing') break; const current = round; if (!identity.playerId || !current.players.includes(identity.playerId) || !Number.isSafeInteger(message.seq) || Number(message.seq) < 0) throw new Error('Invalid held input.'); if (Number(message.seq) <= identity.seq) break; const input = message.type === 'input.release' ? current.game.rules.neutralInput() : current.game.rules.parseInput(message.payload); identity.seq = Number(message.seq); current.inputs.set(identity.playerId, input); current.inputAt.set(identity.playerId, now()); break; }
