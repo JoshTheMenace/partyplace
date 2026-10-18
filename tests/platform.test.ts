@@ -475,3 +475,28 @@ test('a lost browser session rejoins its seat by name; connected names and the h
     assert.match((await stale.take('error')).reason, /Saved seat expired/);
   } finally { await h.close(); }
 });
+
+test('a game loading budget keeps a cold scene alive beyond the default deadline and still waits for every screen', async () => {
+  let time = 1000; const game = makeGame('slow-scene'); game.manifest.prepareTimeoutMs = 60000;
+  const h = await harness([game], { now: () => time, prepareTimeoutMs: undefined, startDelayMs: 100 });
+  try {
+    const r = await room(h); r.host.send('game.select', { gameId: game.manifest.id }); await r.host.take('room.state', p => p.room.phase === 'lobby');
+    for (const phone of r.phones) phone.send('room.ready', { ready: true }); await r.host.take('room.state', p => p.room.players.every((a: any) => a.ready));
+    r.host.send('round.start'); const preparing = await r.host.take('round.prepare'); assert.equal(preparing.deadline, 61000);
+    time = 22000; for (const phone of r.phones) phone.send('round.ready', { roundId: preparing.roundId }); await delay(20);
+    assert.equal(h.party.roomView().phase, 'preparing'); assert.equal(h.party.roomView().startAt, null);
+    r.host.send('round.ready', { roundId: preparing.roundId }); await r.host.take('round.begin'); time += 101;
+    await r.host.take('game.snapshot'); assert.equal(h.party.roomView().phase, 'playing');
+  } finally { await h.close(); }
+});
+
+test('game roster validation rejects an unsupported setup before preparing any screens', async () => {
+  const game = makeGame('roster-check'); game.rules = { ...rules, validateStart() { throw new Error('Needs a human on each team.'); } };
+  const h = await harness([game]);
+  try {
+    const r = await room(h); r.host.send('game.select', { gameId: game.manifest.id }); await r.host.take('room.state', p => p.room.phase === 'lobby');
+    for (const phone of r.phones) phone.send('room.ready', { ready: true }); await r.host.take('room.state', p => p.room.players.every((a: any) => a.ready));
+    r.host.send('round.start'); const error = await r.host.take('error'); assert.match(error.reason, /human on each team/);
+    assert.equal(h.party.roomView().phase, 'lobby'); assert.ok(!r.host.packets.some(p => p.type === 'round.prepare'));
+  } finally { await h.close(); }
+});

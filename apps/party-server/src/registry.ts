@@ -1,3 +1,5 @@
+import { manifest as inkwaveManifest } from '../../../packages/games/inkwave/src/manifest';
+import { rules as inkwaveRules } from '../../../packages/games/inkwave/src/server';
 import { manifest as ichiManifest } from '../../../packages/games/ichi/src/manifest';
 import { rules as ichiRules } from '../../../packages/games/ichi/src/server';
 import { manifest as nightJobManifest } from '../../../packages/games/night-job/src/manifest';
@@ -24,6 +26,7 @@ import { rules as settlersRules } from '../../../packages/games/island-settlers/
 import { manifest as skyManifest } from '../../../packages/games/sky-clash/src/manifest';
 import { rules as skyRules } from '../../../packages/games/sky-clash/src/server';
 export const games: RegisteredGame[] = [
+  { manifest: inkwaveManifest, rules: inkwaveRules },
   { manifest: ichiManifest, rules: ichiRules, actionLimits: { perPlayer: 512, maxBytes: 1024, history: 'window' } },
   { manifest: nightJobManifest, rules: nightJobRules },
   { manifest: phonedigManifest, rules: phonedigRules, actionLimits: { perPlayer: 256, maxBytes: 1024, history: 'window' } },

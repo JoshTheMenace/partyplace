@@ -22,6 +22,7 @@ function string(value: unknown, max = 80): string { if (typeof value !== 'string
 function canonical(value: unknown): string { return JSON.stringify(value, (_key, item) => item && typeof item === 'object' && !Array.isArray(item) ? Object.fromEntries(Object.entries(item).sort(([a],[b]) => a.localeCompare(b))) : item); }
 export function validateManifest(manifest: GameManifest): void {
   assertSerializable(manifest);
+  if (manifest.prepareTimeoutMs !== undefined && (!Number.isInteger(manifest.prepareTimeoutMs) || manifest.prepareTimeoutMs < 20000 || manifest.prepareTimeoutMs > 120000)) throw new Error('Invalid preparation timeout.');
   if (manifest.snapshotCache) validateSnapshotCache(manifest.snapshotCache);
   if (manifest.sessionControls && (!Array.isArray(manifest.sessionControls) || manifest.sessionControls.some(control => !['save', 'finish'].includes(control)) || new Set(manifest.sessionControls).size !== manifest.sessionControls.length)) throw new Error('Invalid session controls.');
   const sim = manifest.simulation;
@@ -143,7 +144,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
       validateViews(game, candidate.state, id, roster.map(item => item.playerId!), 'playing');
     } catch (error) { if (candidate?.state != null && candidate.state !== current?.state) { try { game.rules.dispose(candidate.state); } catch { /* Preserve the import validation error. */ } } throw error; }
     checkpoint(current);
-    round = { game, encoder: new SnapshotEncoder(), publicFrame: null, id, worldId, state: candidate.state, players: roster.map(item => item.playerId!), inputs: new Map(), inputAt: new Map(), required: new Set([...identities.values()].filter(item => item.socket).map(item => item.id)), loaded: new Set(), deadline: time + (options.prepareTimeoutMs ?? 20000), startAt: null, acks: new Map(), actionCounts: new Map(), actionWindows: new Map(), clock: null, lastLegacyTick: time, lastLegacySchedule: -Infinity, lastSnapshot: -Infinity };
+    round = { game, encoder: new SnapshotEncoder(), publicFrame: null, id, worldId, state: candidate.state, players: roster.map(item => item.playerId!), inputs: new Map(), inputAt: new Map(), required: new Set([...identities.values()].filter(item => item.socket).map(item => item.id)), loaded: new Set(), deadline: time + (options.prepareTimeoutMs ?? game.manifest.prepareTimeoutMs ?? 20000), startAt: null, acks: new Map(), actionCounts: new Map(), actionWindows: new Map(), clock: null, lastLegacyTick: time, lastLegacySchedule: -Infinity, lastSnapshot: -Infinity };
     settings = candidate.settings; phase = 'preparing'; notice = null;
     for (const identity of identities.values()) { identity.seq = -1; identity.ready = false; }
     if (current) disposeState(current);
@@ -252,7 +253,8 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
             if (roster.some(item => !item.socket || !item.ready)) throw new Error('Every player must be connected and Ready. Remove disconnected seats or wait for them.');
             if (selected.rules.parseLobbyChoice) for (const seat of roster) selected.rules.parseLobbyChoice(seat.lobbyChoice, true);
             settings = selected.rules.validateSettings(settings); assertSerializable(settings);
-            round = { encoder: new SnapshotEncoder(), publicFrame: null, id: randomUUID(), worldId: randomUUID(), game: selected, state: null, players: roster.map(item => item.playerId!), inputs: new Map(), inputAt: new Map(), required: new Set([...identities.values()].filter(item => item.socket).map(item => item.id)), loaded: new Set(), deadline: now() + (options.prepareTimeoutMs ?? 20000), startAt: null, acks: new Map(), actionCounts: new Map(), actionWindows: new Map(), clock: null, lastLegacyTick: now(), lastLegacySchedule: -Infinity, lastSnapshot: -Infinity };
+            selected.rules.validateStart?.(roster.map(item => ({ id: item.playerId!, name: item.name, color: item.color, ...(item.lobbyChoice === undefined ? {} : { lobbyChoice: item.lobbyChoice }) })), settings);
+            round = { encoder: new SnapshotEncoder(), publicFrame: null, id: randomUUID(), worldId: randomUUID(), game: selected, state: null, players: roster.map(item => item.playerId!), inputs: new Map(), inputAt: new Map(), required: new Set([...identities.values()].filter(item => item.socket).map(item => item.id)), loaded: new Set(), deadline: now() + (options.prepareTimeoutMs ?? selected.manifest.prepareTimeoutMs ?? 20000), startAt: null, acks: new Map(), actionCounts: new Map(), actionWindows: new Map(), clock: null, lastLegacyTick: now(), lastLegacySchedule: -Infinity, lastSnapshot: -Infinity };
             phase = 'preparing'; notice = null; broadcastRoom(); for (const item of identities.values()) send(item.socket, 'round.prepare', { roundId: round.id, gameId: selected.manifest.id, deadline: round.deadline }); break;
           }
           // A cancelled load can leave readiness in flight; it must not affect a newer round.

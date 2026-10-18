@@ -2,6 +2,7 @@ import { SkyClashArt } from '../../../packages/games/sky-clash/src/art';
 import { StarshipArt } from '../../../packages/games/starship-scramble/src/art';
 import type { CSSProperties } from 'react';
 export const gameLooks: Record<string, { tone: 'sun' | 'coral' | 'sky' | 'lime' | 'grape'; verb: string }> = {
+  'inkwave': { tone: 'coral', verb: 'Paint. Swim. Make a splash.' },
   'ichi': { tone: 'coral', verb: 'One card. So many possibilities.' },
   'island-settlers': { tone: 'lime', verb: 'Trade. Build. Settle the island.' },
   'night-job': { tone: 'sky', verb: 'Slip in. Stick together. Get out.' },
@@ -12,6 +13,7 @@ export const gameLooks: Record<string, { tone: 'sun' | 'coral' | 'sky' | 'lime' 
   'trolley-court': { tone: 'sky', verb: 'Stack the tracks. Plead your case. Pull the lever?' },
 };
 export function GameArt({ id, className = '' }: { id: string; className?: string }) {
+  if (id === 'inkwave') return <img src="/games/inkwave/assets/stages/tidewater-day.webp" alt="" className={`kp-game-art kp-catalog-cover ${className}`}/>;
   if (id === 'night-job') return <img src="/games/night-job/cover.png" alt="" className={`kp-game-art kp-catalog-cover ${className}`}/>;
   if (id === 'sky-clash') return <SkyClashArt className={`kp-game-art ${className}`}/>;
   if (id === 'starship-scramble') return <StarshipArt className={className}/>;

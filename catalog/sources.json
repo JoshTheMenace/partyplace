@@ -7,6 +7,53 @@
       "description": "Play solo or bring friends. A growing collection of local multiplayer games.",
       "games": [
         {
+          "id": "inkwave",
+          "title": "INKWAVE",
+          "description": "A 4v4 ink shooter. Paint the most ground in Turf War, hold the zones, or team up against HULLBREAKER, a giant crab in a shipping container.",
+          "category": "Party",
+          "status": "ready",
+          "players": {
+            "min": 1,
+            "max": 8
+          },
+          "supportsSolo": true,
+          "requiresSharedDisplay": false,
+          "cooperative": false,
+          "controls": [
+            "Touch",
+            "Keyboard",
+            "Phone controllers"
+          ],
+          "playTime": "1\u20135 min / match",
+          "launch": "room",
+          "searchTerms": [
+            "ink",
+            "shooter",
+            "turf war",
+            "4v4",
+            "teams",
+            "3d"
+          ],
+          "tags": [
+            "4v4",
+            "ink shooter",
+            "CPUs",
+            "mobile"
+          ],
+          "creator": {
+            "name": "Jayden Davis"
+          },
+          "detail": "Eight stages, twelve weapons and three modes: Turf War, Zone Control and co-op Boss Battle. Up to eight players join on their phones. Turn your phone sideways to get your own view, then move with your left thumb and aim and fire with your right. Pick a loadout and dress up your squidkid before each match. CPUs fill empty seats, except on Cargo Terminal, which is humans only.",
+          "capabilities": [
+            "browser-play",
+            "shared-display",
+            "phone-controllers",
+            "solo",
+            "touch",
+            "keyboard"
+          ]
+        },
+        {
           "id": "ichi",
           "title": "Ichi",
           "description": "Match colors, stack the penalties and shout Ichi! before anyone catches you on your last card.",
