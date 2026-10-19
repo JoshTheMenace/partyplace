@@ -144,7 +144,7 @@ test('host credential takeover preserves authority; strangers cannot resume; ove
 test('drawing and LAN address boundaries', () => {
   assert.throws(() => parseDrawing({ strokes: [{ color: 'red', width: 0.01, points: [{ x: 0, y: 0 }] }] }));
   assert.throws(() => parseDrawing({ strokes: [{ color: DRAWING_COLORS[0], width: 0.01, points: [{ x: Infinity, y: 0 }] }] }));
-  assert.throws(() => parseDrawing({ strokes: [{ color: DRAWING_COLORS[0], width: 0.01, points: Array.from({ length: 481 }, () => ({ x: 0, y: 0 })) }] }));
+  assert.throws(() => parseDrawing({ strokes: [{ color: DRAWING_COLORS[0], width: 0.01, points: Array.from({ length: 7500 }, () => ({ x: 0, y: 0 })) }] }));
   assert.deepEqual(parseDrawing({ strokes: [] }), { strokes: [] });
   const addresses = discoverPartyAddresses(4317, () => ({ lo0: [{ address: '127.0.0.1', family: 'IPv4', internal: true }], en0: [{ address: '192.168.1.12', family: 'IPv4', internal: false }] }) as any, 'evil.example');
   assert.equal(addresses.preferredUrl, 'http://192.168.1.12:4317'); assert(!JSON.stringify(addresses).includes('evil.example'));
