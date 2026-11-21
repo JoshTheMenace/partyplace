@@ -64,7 +64,8 @@ test('socket window supports 4200 commands, authenticated reconnect, payload lim
     const host = await connect(); host.send('room.create'); const created = await host.take('room.welcome');
     let phone = await connect(); phone.send('room.join', { code: created.room.code, name: 'Captain' }); const joined = await phone.take('room.welcome');
     host.send('game.select', { gameId: game.manifest.id }); await host.take('room.state', p => p.room.phase === 'lobby');
-    const start = async () => { phone.send('room.ready', { ready: true }); await host.take('room.state', p => p.room.players.every((player: any) => player.ready)); host.send('round.start'); const prepare = await host.take('round.prepare'); for (const peer of [host, phone]) peer.send('round.ready', { roundId: prepare.roundId }); await phone.take('game.snapshot', p => p.roundId === prepare.roundId); return prepare.roundId as string; };
+    // Wait for the lobby state that answers this Ready: older queued states also show everyone ready, and Start must not race it on another socket.
+    const start = async () => { phone.send('room.ready', { ready: true }); await host.take('room.state', p => p.room.phase === 'lobby' && p.room.players.every((player: any) => player.ready)); host.send('round.start'); const prepare = await host.take('round.prepare'); for (const peer of [host, phone]) peer.send('round.ready', { roundId: prepare.roundId }); await phone.take('game.snapshot', p => p.roundId === prepare.roundId); return prepare.roundId as string; };
     const roundId = await start(); assert.equal(party.roomView().actionWindow, 64);
     for (let base = 1; base <= 4200; base += 50) {
       now += 1000;

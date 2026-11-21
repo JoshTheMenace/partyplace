@@ -5,7 +5,7 @@ import { existsSync, statSync } from 'node:fs';
 import { resolve, extname, sep } from 'node:path';
 import { createRoomHub } from './room-hub';
 import { discoverPartyAddresses } from './network-address';
-import { games } from './registry';
+import { games, rosters } from './registry';
 import { readCatalog } from './catalog';
 
 /** One HTTP+WebSocket application for both the hosted service and the packaged local host. */
@@ -58,7 +58,7 @@ export function createPartyApp(options: PartyAppOptions) {
     if (pathname === '/api/addresses') { response.setHeader('Content-Type', 'application/json'); response.end(JSON.stringify({ ...(publicOrigin ? { urls: [publicOrigin], preferredUrl: publicOrigin } : discoverPartyAddresses(port, undefined, request.headers.host, request.socket.localAddress, (server.address() as { address?: string } | null)?.address)), host: hostKind })); return; }
     if (pathname === '/api/catalog') {
       response.setHeader('Content-Type', 'application/json'); response.setHeader('Cache-Control', 'no-store');
-      void readCatalog(options.catalogPath, new Set(games.map(game => game.manifest.id))).then(sources => response.end(JSON.stringify({ games: games.map(game => game.manifest), sources }))).catch(error => { console.error('Catalog unavailable:', error.message); response.writeHead(503).end(JSON.stringify({ error: 'Discover is temporarily unavailable. Please try again.' })); });
+      void readCatalog(options.catalogPath, rosters()).then(sources => response.end(JSON.stringify({ games: games.map(game => game.manifest), sources }))).catch(error => { console.error('Catalog unavailable:', error.message); response.writeHead(503).end(JSON.stringify({ error: 'Discover is temporarily unavailable. Please try again.' })); });
       return;
     }
     if (pathname === '/api/health') { response.setHeader('Content-Type', 'application/json'); response.end(JSON.stringify({ ok: true, games: games.map(game => game.manifest.id), host: hostKind, ...(local ? { instanceId: local.instanceId } : {}) })); return; }

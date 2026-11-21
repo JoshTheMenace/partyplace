@@ -39,5 +39,7 @@ export const games: RegisteredGame[] = [
   { manifest: hijinksManifest, rules: hijinksRules, actionLimits: { perPlayer: 256, maxBytes: 32768, history: 'window' } },
   { manifest: trolleyManifest, rules: trolleyRules, actionLimits: { perPlayer: 1024, maxBytes: 1024, history: 'window' } },
 ];
+/** Installed games by id with their manifest roster, for catalog validation. Read after the QA fixture below registers. */
+export const rosters = () => new Map(games.map(game => [game.manifest.id, game.manifest.players]));
 
-if (process.env.PARTY_QA === '1') { const [{ manifest }, { rules }] = await Promise.all([import('../../../packages/games/scene-lab/src/manifest'), import('../../../packages/games/scene-lab/src/server')]); games.push({ manifest, rules }); }
+if (process.env.PARTY_QA === '1') { const [{ manifest }, { rules }] = await Promise.all([import('../../../packages/games/scene-lab/src/manifest'), import('../../../packages/games/scene-lab/src/server')]); games.push({ manifest, rules }, await import('./crowd-lab')); }

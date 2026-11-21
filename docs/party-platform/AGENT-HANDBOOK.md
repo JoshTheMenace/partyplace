@@ -67,6 +67,42 @@ Use actual UI joins, readiness, submissions, votes, and replay for acceptance. S
 
 Capture layout metrics and representative screenshots together. Inspect screenshots; document height alone can miss clipped descendants, overlapping cards, animation blanks, or a misplaced canvas hit area. Count accepted submissions/votes so a zero-vote timeout game is not described as a fully voted game. Retest the affected state after a repair; do not repeat an unrelated ten-minute game when focused evidence plus the prior complete flow suffices.
 
+## Big rosters
+
+A room seats `MAX_ROOM_PLAYERS` (64), exported from `packages/party-contract/src/index.ts`. 32 concurrent players is the size the platform regularly tests; 64 is the ceiling. Each game still declares its own maximum. [IMPLEMENTATION.md](IMPLEMENTATION.md#big-rooms-2026-11-21) describes the platform side.
+
+To let a game seat more than ten:
+
+1. Raise `players.max` in `packages/games/<id>/src/manifest.ts`, at most `MAX_ROOM_PLAYERS`. Import the constant if you mean "as many as the room holds". This is the only place the number lives: the room server validates it, the room picker and `/api/catalog` (Discover, My Library, game pages) read it from the manifest, and the registry contract test creates a round at the new maximum.
+2. Fix prose that states a count. It is hand-written: the game's `description` and `detail` in `catalog/sources.json` (its `players` field there is ignored for installed games), the Kart Party and Night Job copy in `apps/party-client/src/catalog.ts`, and the game's own README and instructions.
+3. Fix what the game assumed about ten: palettes, avatar or character pools and arrays indexed by seat; layouts, `LobbyView` and results built for ten names; tests and QA drivers that stop at ten; work that grows with players squared in `tick` or `playerView`.
+
+What the platform hands a game:
+
+- `RoundContext.players` and `SceneView` `players` hold only the people in the round. `LobbyView` `players` is the whole room, which can be longer than your maximum: an over-full room starts with the first `players.max` people who tap Ready and the rest watch. A lobby can tell a seat is shut out when the room is larger than the maximum, that many seats are Ready, and this one is not.
+- Seat colours are 64 distinct strings. The first ten are unchanged; above ten, neighbours can look alike, so show a name or number with the colour.
+- Every phone receives the whole public view at the snapshot rate, so traffic grows with the square of the roster. At 270 bytes a player and 20 Hz, 64 players cost each phone 337 KiB/s. Send per-player data that rarely changes (ids, names, colours, picks) through a `snapshotCache` field or once at the start, keep per-frame state numeric and short, and choose the lowest `snapshotHz` that still feels right. `node --import tsx scripts/qa/room-scale.ts` prints the platform's own cost at 10, 32 and 64 players as a reference.
+
+Fill a room with socket bots instead of browser pages. Start an isolated server, create the room from a real host page, then:
+
+```sh
+node --import tsx scripts/qa/room-bots.ts --port 4401 --code ABCDEF --players 31 --stats 5
+```
+
+Each bot joins with a distinct 16-character name, taps Ready, answers the preparation barrier, stays connected and rejoins its seat if its socket drops. `--offset 31` adds more seats after an earlier run, `--no-ready` leaves them unready, `--input '{"x":1,"y":0}'` holds a constant input at `--hz` (20), `--minutes 10` leaves by itself. A game that needs lobby picks, real input or actions passes `--hook <module>`, whose default export is a plain object with any of:
+
+```ts
+export default {
+  lobbyChoice: (bot, room) => ({ racer: bot.index % 8 }),          // sent before Ready; room.players shows other seats' picks
+  input: bot => ({ steer: Math.sin(Date.now() / 700 + bot.index) }), // held input, called --hz times a second while playing
+  snapshot(bot, snapshot) { if (myTurn(snapshot, bot.playerId)) void bot.act({ kind: 'pass' }); }, // every decoded snapshot
+};
+```
+
+`bot` carries `index`, `name`, `playerId`, the latest `room` and decoded `snapshot`, `act(payload)` (handles windowed action ids and resolves with the ack), `send(type, payload)` and `drop()` to cut its connection. Keep a game's hook beside the game, for example `packages/games/<id>/tools/room-bot.ts`, and leave it untyped or copy the shapes from `scripts/qa/room-bots.ts`: the games repository cannot import platform scripts. Tests and Node drivers in the platform repository can call `joinBots({ port, code, players, hook })` from the same file.
+
+For the shell itself, `PLAYWRIGHT_CORE=<dir containing playwright-core> node scripts/qa/big-room-shots.mjs --port 4401 --players 64` drives one real display, one real phone and bots through an over-full lobby, the picker, a full Crowd Lab round and its results on a `--3d` build, and writes screenshots with layout metrics. Check a changed game at 32 with real screenshots and make sure it does not break at its maximum.
+
 ## Handoff
 
 Report the current build and implementation status first, important decisions, run commands, actual tested roster/content/viewports, scoring/replay evidence, and remaining device/performance limits. Link one game README and one current QA report rather than scattering contradictory completion claims. Close only owned test rooms/browsers/servers; preserve the user's runtime. No git publication without its separate authorization.

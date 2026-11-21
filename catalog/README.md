@@ -42,7 +42,7 @@ This example is documentation only; replace the example URLs with your chosen ga
 
 `launch` determines what Play does:
 
-- `room`: launches a game already installed in the PartyPlay runtime. Its ID must match an existing registered game. Use this for the installed originals; listing arbitrary source code does not install it.
+- `room`: launches a game already installed in the PartyPlay runtime. Its ID must match an existing registered game. Use this for the installed originals; listing arbitrary source code does not install it. The server replaces a room listing's `players` with the installed game's own range, so that field cannot drift; counts written into `description` or `detail` are still yours to keep true.
 - `external`: opens `playUrl` in a new tab on the creator's site. These are manually authored listings, with no URL importer, code fetching, embedding or build service. A GitHub repository page belongs in `sourceUrl`; use the actual deployed game for `playUrl`.
 - `unavailable`: a details-only listing people can save to their library. Use this when you have source information but no playable release. Omit `playUrl`.
 

@@ -40,7 +40,7 @@ Put an HTTPS reverse proxy in front of the container with WebSocket support and 
 - Favorite games and recent launches stay in this browser. There are no accounts or cross-device library sync.
 - Blockwild world files can be downloaded and imported by the host. Room autosaves keep the latest and previous checkpoints in a separate directory for each room. When the room expires, its server recovery is no longer accessible through a new room; download a world file before leaving.
 - Kitchen Rush campaign progress stays in the display browser. Active games need the server connection.
-- The new router permits up to 32 shared rooms and 256 shared sockets, preserving ten player seats per room. These are protective bounds, not a measured hosting capacity.
+- The router permits up to 32 shared rooms and 1024 shared sockets, with up to 64 player seats per room (each game sets its own maximum) and 304 new connections a minute per address. These are protective bounds, not a measured hosting capacity; one 64-player realtime room alone can send about 21 MiB/s.
 - A host disconnect has a two-minute reconnect grace period. Restarting the application loses active rooms. Existing save files on a persistent volume survive a process restart, but there is no account-based recovery UI for expired rooms.
 - Today’s catalog is curated and first-party. Offline game packages, licensed source downloads, remixing, creator submissions, source feeds, and MCP publishing are future releases.
 

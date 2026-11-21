@@ -6,19 +6,30 @@ import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import type { IncomingMessage, Server } from 'node:http';
 import type { Duplex } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
-import { CONTRACT_VERSION, MAX_MESSAGE_BYTES, MAX_SAVE_BYTES, type GameManifest, type GameRules, type ActionResult } from '../../../packages/party-contract/src/index';
+import { CONTRACT_VERSION, MAX_MESSAGE_BYTES, MAX_ROOM_PLAYERS, MAX_SAVE_BYTES, type GameManifest, type GameRules, type ActionResult } from '../../../packages/party-contract/src/index';
 import type { RoomPhase, RoomView, Wire } from '../../../packages/party-contract/src/protocol';
 import type { RecoverySlot, RecoveryStore } from './recovery-store';
 import { ActionWindow } from './action-window';
 // Type erasure is confined to registry dispatch; games remain strictly typed at their exports.
 export type RegisteredGame = { manifest: GameManifest; rules: GameRules<any, any, any, any, any, any>; actionLimits?: { perPlayer: number; maxBytes: number; history?: 'window' } };
 type Identity = { id: string; token: string; playerId: string | null; name: string; color: string; ready: boolean; lobbyChoice?: unknown; socket: WebSocket | null; seq: number; disconnectedAt: number | null };
-type PublicFrame = { revision: number; phase: RoomPhase; time: number; view: unknown; encoded: ReturnType<SnapshotEncoder['encode']> };
+type PublicFrame = { revision: number; phase: RoomPhase; time: number; view: unknown; encoded: ReturnType<SnapshotEncoder['encode']>; head: string; bodies: Map<string, string>; tail: string };
 type Round = { encoder: SnapshotEncoder; publicFrame: PublicFrame | null; id: string; worldId: string; game: RegisteredGame; state: any; players: string[]; inputs: Map<string, unknown>; inputAt: Map<string, number>; required: Set<string>; loaded: Set<string>; deadline: number; startAt: number | null; acks: Map<string, { payload: string; result: ActionResult }>; actionCounts: Map<string, number>; actionWindows: Map<string, ActionWindow>; clock: FixedStepClock | null; lastLegacyTick: number; lastLegacySchedule: number; lastSnapshot: number };
-const COLORS = ['#ff5748','#28c6e7','#78d955','#b58aff','#ffd24a','#ff90ba','#56decd','#ffa260','#97aeff','#e2ef93'];
+/**
+ * Room bounds. Seats come from the contract ceiling; the rest are derived here so they move with it.
+ * Displays: the host screen plus extra TVs. They do not grow with the roster, so twelve stays.
+ * Sockets: each seat and display may briefly hold two, its live socket and a replaced one that is still closing. A Wi-Fi blip
+ * reconnects a whole room at once and a dead peer's old socket lingers until its close handshake times out.
+ * Messages: per socket, so independent of roster size. Held input peaks at 40/s; actions and clock pings share the rest.
+ */
+export const MAX_ROOM_DISPLAYS = 12, MAX_ROOM_SOCKETS = 2 * (MAX_ROOM_PLAYERS + MAX_ROOM_DISPLAYS), MAX_SOCKET_MESSAGES_PER_SECOND = 80;
+const hsl = (h: number, s: number, l: number) => '#' + [0, 8, 4].map(n => { const k = (n + h / 30) % 12; return Math.round(255 * (l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, '0'); }).join('');
+/** One colour per seat: the ten hand-picked originals, then golden-angle hues in three light bands that stay readable on the dark shell. */
+const COLORS = ['#ff5748','#28c6e7','#78d955','#b58aff','#ffd24a','#ff90ba','#56decd','#ffa260','#97aeff','#e2ef93', ...Array.from({ length: MAX_ROOM_PLAYERS - 10 }, (_, i) => hsl((i + 10) * 137.508 % 360, .9, [.68, .74, .8][i % 3]))];
 function record(value: unknown): Record<string, unknown> { if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Expected an object.'); return value as Record<string, unknown>; }
 function string(value: unknown, max = 80): string { if (typeof value !== 'string' || !value.length || value.length > max) throw new Error('Invalid text value.'); return value; }
 
+const listNames = (names: string[]) => names.length > 4 ? `${names.slice(0, 3).join(', ')} and ${names.length - 3} more` : names.join(', ');
 function canonical(value: unknown): string { return JSON.stringify(value, (_key, item) => item && typeof item === 'object' && !Array.isArray(item) ? Object.fromEntries(Object.entries(item).sort(([a],[b]) => a.localeCompare(b))) : item); }
 export function validateManifest(manifest: GameManifest): void {
   assertSerializable(manifest);
@@ -27,7 +38,7 @@ export function validateManifest(manifest: GameManifest): void {
   if (manifest.sessionControls && (!Array.isArray(manifest.sessionControls) || manifest.sessionControls.some(control => !['save', 'finish'].includes(control)) || new Set(manifest.sessionControls).size !== manifest.sessionControls.length)) throw new Error('Invalid session controls.');
   const sim = manifest.simulation;
   if (sim && (manifest.timing !== 'realtime' || !Number.isInteger(sim.stepHz) || sim.stepHz < 15 || sim.stepHz > 120 || !Number.isInteger(sim.snapshotHz) || sim.snapshotHz < 1 || sim.snapshotHz > Math.min(30, sim.stepHz) || !Number.isInteger(sim.maxCatchUpSteps) || sim.maxCatchUpSteps < 1 || sim.maxCatchUpSteps > 12)) throw new Error('Invalid simulation profile.');
-  if (manifest.contractVersion !== CONTRACT_VERSION || !/^[a-z]+(?:-[a-z]+)*$/.test(manifest.id) || !manifest.title || manifest.title.length > 80 || !manifest.description || manifest.description.length > 500 || manifest.assetBase !== `/games/${manifest.id}/` || !Array.isArray(manifest.modes) || manifest.modes.length !== 1 || manifest.modes[0] !== 'shared-display' || !Number.isInteger(manifest.players.min) || !Number.isInteger(manifest.players.max) || manifest.players.min < 1 || manifest.players.max > 10 || manifest.players.max < manifest.players.min || !['portrait','landscape','any'].includes(manifest.orientation.controller) || !['portrait','landscape','any'].includes(manifest.orientation.personalView) || !['turn-based','realtime'].includes(manifest.timing) || !Array.isArray(manifest.input) || !manifest.input.length || manifest.input.some(value => !['state','action'].includes(value)) || typeof manifest.privatePlayerViews !== 'boolean' || typeof manifest.supportsSolo !== 'boolean' || manifest.supportsSolo && manifest.players.min !== 1) throw new Error(`Invalid or unsupported manifest: ${manifest.id}`);
+  if (manifest.contractVersion !== CONTRACT_VERSION || !/^[a-z]+(?:-[a-z]+)*$/.test(manifest.id) || !manifest.title || manifest.title.length > 80 || !manifest.description || manifest.description.length > 500 || manifest.assetBase !== `/games/${manifest.id}/` || !Array.isArray(manifest.modes) || manifest.modes.length !== 1 || manifest.modes[0] !== 'shared-display' || !Number.isInteger(manifest.players.min) || !Number.isInteger(manifest.players.max) || manifest.players.min < 1 || manifest.players.max > MAX_ROOM_PLAYERS || manifest.players.max < manifest.players.min || !['portrait','landscape','any'].includes(manifest.orientation.controller) || !['portrait','landscape','any'].includes(manifest.orientation.personalView) || !['turn-based','realtime'].includes(manifest.timing) || !Array.isArray(manifest.input) || !manifest.input.length || manifest.input.some(value => !['state','action'].includes(value)) || typeof manifest.privatePlayerViews !== 'boolean' || typeof manifest.supportsSolo !== 'boolean' || manifest.supportsSolo && manifest.players.min !== 1) throw new Error(`Invalid or unsupported manifest: ${manifest.id}`);
 }
 export function createRoomServer(server: Server, games: RegisteredGame[], options: { managed?: boolean; code?: string; now?: () => number; prepareTimeoutMs?: number; startDelayMs?: number; hostGraceMs?: number; heartbeatIntervalMs?: number; heartbeatTimeoutMs?: number; recoveryStore?: RecoveryStore; recoveryIntervalMs?: number; tickMs?: number; seed?: () => number } = {}) {
   for (const { actionLimits: limits } of games) if (limits && (!Number.isInteger(limits.perPlayer) || limits.perPlayer < (limits.history === 'window' ? 16 : 1) || limits.history !== undefined && limits.history !== 'window' || limits.perPlayer > 4096 || !Number.isInteger(limits.maxBytes) || limits.maxBytes < 1 || limits.maxBytes > MAX_MESSAGE_BYTES || limits.perPlayer * limits.maxBytes > 256 * MAX_MESSAGE_BYTES)) throw new Error('Invalid game action limits.');
@@ -47,23 +58,37 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
   let lobbyId = randomUUID();
   let roomId = '', code = '', hostId = '', phase: RoomPhase = 'picker', revision = 0, selected: RegisteredGame | null = null, settings: unknown = {}, round: Round | null = null, notice: string | null = null;
   const players = () => [...identities.values()].filter(identity => identity.playerId !== null);
+  /** Who plays the next round. A room may hold more people than the game seats: then the Ready players play and the rest watch. */
+  const lineup = (game: RegisteredGame, current: Round | null = null) => { const all = players(); return all.length <= game.manifest.players.max ? all : all.filter(item => current ? current.players.includes(item.playerId!) : item.socket && item.ready); };
+  const roundFull = () => !!selected && players().length > selected.manifest.players.max && players().filter(item => item.ready).length >= selected.manifest.players.max;
+  /** Screens that must finish loading before the common start: every display and the phones in the lineup. */
+  const screens = (roster: Identity[]) => new Set([...identities.values()].filter(item => item.socket && (!item.playerId || roster.includes(item))).map(item => item.id));
+  const freeColor = (self?: Identity) => COLORS.find(color => !players().some(player => player !== self && player.color === color)) ?? COLORS[0];
   const view = (): RoomView => ({ id: roomId, code, revision, phase, hostId, hostConnected: !!identities.get(hostId)?.socket, players: players().map(identity => ({ id: identity.playerId!, name: identity.name, color: identity.color, connected: !!identity.socket, ready: identity.ready, ...(identity.lobbyChoice !== undefined && selected?.rules.parseLobbyChoice ? { lobbyChoice: identity.lobbyChoice } : {}) })), ...(selected?.rules.parseLobbyChoice ? { lobbyId } : {}), gameId: selected?.manifest.id ?? null, settings, roundId: round?.id ?? null, activePlayerIds: round?.players ?? [], startAt: round?.startAt ?? null, preparationDeadline: round?.deadline ?? null, notice, ...(selected?.actionLimits?.history === 'window' ? { actionWindow: selected.actionLimits.perPlayer } : {}) });
-  function send(socket: WebSocket | null, type: string, data: Record<string, unknown> = {}) {
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    if (socket.bufferedAmount > 2 * 1024 * 1024) { socket.close(1013, 'Connection too slow. Reconnect.'); return; }
-    const envelope = { v: CONTRACT_VERSION, type, ...data }; assertSerializable(envelope); socket.send(JSON.stringify(envelope));
+  const checked = (value: unknown) => { assertSerializable(value); return JSON.stringify(value); };
+  const wire = (type: string, data: Record<string, unknown> = {}) => checked({ v: CONTRACT_VERSION, type, ...data });
+  function live(socket: WebSocket | null): socket is WebSocket {
+    if (socket?.readyState !== WebSocket.OPEN) return false;
+    if (socket.bufferedAmount > 2 * 1024 * 1024) { socket.close(1013, 'Connection too slow. Reconnect.'); return false; }
+    return true;
   }
-  function broadcastRoom() { revision++; for (const identity of identities.values()) send(identity.socket, 'room.state', { room: view() }); }
+  function send(socket: WebSocket | null, type: string, data: Record<string, unknown> = {}) { if (live(socket)) socket.send(wire(type, data)); }
+  // Every recipient gets the same room view: build, check and serialize it once per change, not once per socket.
+  function broadcastRoom() { revision++; const state = wire('room.state', { room: view() }); for (const identity of identities.values()) if (live(identity.socket)) identity.socket.send(state); }
   function snapshot(identity: Identity) {
-    if (!round || round.state === null || phase === 'preparing' || identity.socket?.readyState !== WebSocket.OPEN) return;
-    const ctx = { nowMs: now(), phase: phase === 'results' ? 'results' as const : 'playing' as const };
+    if (!round || round.state === null || phase === 'preparing' || !live(identity.socket)) return;
+    const results = phase === 'results', ctx = { nowMs: now(), phase: results ? 'results' as const : 'playing' as const };
     if (!round.publicFrame || round.publicFrame.revision !== revision || round.publicFrame.phase !== phase) {
       const projected = round.game.rules.publicView(round.state, ctx);
-      round.publicFrame = { revision, phase, time: ctx.nowMs, view: projected, encoded: round.encoder.encode(round.id, projected, round.game.manifest.snapshotCache) };
+      // The shared parts of a snapshot are checked and serialized once per frame; only the private view is per seat.
+      round.publicFrame = { revision, phase, time: ctx.nowMs, view: projected, encoded: round.encoder.encode(round.id, projected, round.game.manifest.snapshotCache), head: wire(results ? 'round.results' : 'game.snapshot', { roundId: round.id, revision, serverTime: ctx.nowMs }).slice(0, -1), bodies: new Map(), tail: results ? `,"outcome":${checked(round.game.rules.outcome(round.state))}}` : '}' };
     }
     const frame = round.publicFrame, encoded = snapshotForCursor(round.id, frame.view, frame.encoded, round.game.manifest.snapshotCache, snapshotCursors.get(identity.socket));
-    send(identity.socket, phase === 'results' ? 'round.results' : 'game.snapshot', { roundId: round.id, revision, serverTime: frame.time, ...encoded, privateView: identity.playerId && round.players.includes(identity.playerId) ? round.game.rules.playerView(round.state, identity.playerId, { ...ctx, nowMs: frame.time }) : null, ...(phase === 'results' ? { outcome: round.game.rules.outcome(round.state) } : {}) });
-    if (encoded.publicCache) snapshotCursors.set(identity.socket, { roundId: round.id, revision: encoded.publicCache.revision });
+    // A cache policy yields at most three public bodies per frame: unchanged, a delta, or the full baseline.
+    const cache = encoded.publicCache, variant = !cache ? '' : cache.reused ? 'reused' : cache.patches ? 'delta' : 'full';
+    let body = frame.bodies.get(variant); if (body === undefined) frame.bodies.set(variant, body = checked(encoded).slice(1, -1));
+    identity.socket.send(`${frame.head},${body},"privateView":${checked(identity.playerId && round.players.includes(identity.playerId) ? round.game.rules.playerView(round.state, identity.playerId, { ...ctx, nowMs: frame.time }) : null)}${frame.tail}`);
+    if (cache) snapshotCursors.set(identity.socket, { roundId: round.id, revision: cache.revision });
   }
 
   function serializeWorld(current: Round) {
@@ -102,7 +127,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
   /** Attach a socket to an existing seat (saved credential or name takeover) and restore its round presence. */
   function resume(found: Identity, socket: WebSocket) {
     const previous = found.socket; found.socket = socket; found.seq = -1; found.disconnectedAt = null;
-    if (found.id === hostId && found.playerId && !selected?.rules.parseLobbyChoice) found.ready = true;
+    if (found.id === hostId && found.playerId && !selected?.rules.parseLobbyChoice && !roundFull()) found.ready = true;
     previous?.close(4001, 'Seat resumed on another connection');
     if (round && phase === 'preparing' && round.required.has(found.id)) { round.loaded.delete(found.id); round.startAt = null; }
     if (round && found.playerId && round.players.includes(found.playerId)) { round.inputs.set(found.playerId, round.game.rules.neutralInput()); round.inputAt.delete(found.playerId); if (round.state !== null) round.game.rules.onPresenceChange(round.state, found.playerId, true, now()); }
@@ -133,7 +158,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
   function importWorld(game: RegisteredGame, raw: unknown, current: Round | null, worldId: string = randomUUID()) {
     assertSerializable(raw);
     if (Buffer.byteLength(JSON.stringify(raw)) > MAX_SAVE_BYTES) throw new Error('World save exceeds 256 KiB.');
-    const roster = players(), id = randomUUID(), time = now();
+    const roster = lineup(game, current), id = randomUUID(), time = now();
     const { min, max } = game.manifest.players;
     if (roster.length < min || roster.length > max || roster.some(item => !item.socket)) throw new Error('Connect every player before loading a world.');
     let candidate: { state: any; settings: unknown } | undefined;
@@ -144,7 +169,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
       validateViews(game, candidate.state, id, roster.map(item => item.playerId!), 'playing');
     } catch (error) { if (candidate?.state != null && candidate.state !== current?.state) { try { game.rules.dispose(candidate.state); } catch { /* Preserve the import validation error. */ } } throw error; }
     checkpoint(current);
-    round = { game, encoder: new SnapshotEncoder(), publicFrame: null, id, worldId, state: candidate.state, players: roster.map(item => item.playerId!), inputs: new Map(), inputAt: new Map(), required: new Set([...identities.values()].filter(item => item.socket).map(item => item.id)), loaded: new Set(), deadline: time + (options.prepareTimeoutMs ?? game.manifest.prepareTimeoutMs ?? 20000), startAt: null, acks: new Map(), actionCounts: new Map(), actionWindows: new Map(), clock: null, lastLegacyTick: time, lastLegacySchedule: -Infinity, lastSnapshot: -Infinity };
+    round = { game, encoder: new SnapshotEncoder(), publicFrame: null, id, worldId, state: candidate.state, players: roster.map(item => item.playerId!), inputs: new Map(), inputAt: new Map(), required: screens(roster), loaded: new Set(), deadline: time + (options.prepareTimeoutMs ?? game.manifest.prepareTimeoutMs ?? 20000), startAt: null, acks: new Map(), actionCounts: new Map(), actionWindows: new Map(), clock: null, lastLegacyTick: time, lastLegacySchedule: -Infinity, lastSnapshot: -Infinity };
     settings = candidate.settings; phase = 'preparing'; notice = null;
     for (const identity of identities.values()) { identity.seq = -1; identity.ready = false; }
     if (current) disposeState(current);
@@ -162,13 +187,13 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
   async function exportRecovery(token: string, gameId: string, slot: RecoverySlot) { authorizeRecovery(token, gameId); const checkpoint = await options.recoveryStore!.read(gameId, slot); authorizeRecovery(token, gameId); return checkpoint.save; }
   async function restoreRecovery(token: string, gameId: string, slot: RecoverySlot) {
     authorizeRecovery(token, gameId); const checkpoint = await options.recoveryStore!.read(gameId, slot), game = authorizeRecovery(token, gameId);
-    if (phase !== 'lobby' || players().some(player => !player.socket || !player.ready)) throw new Error('Return to the lobby and have every player connect and tap Ready before restoring.');
+    if (phase !== 'lobby' || lineup(game).some(player => !player.socket || !player.ready)) throw new Error('Return to the lobby and have every player connect and tap Ready before restoring.');
     return importWorld(game, JSON.parse(checkpoint.save), null, checkpoint.worldId);
   }
   wss.on('connection', (socket, request) => {
     // Same-origin LAN browsers only. Non-browser test clients may omit Origin.
     if (request.headers.origin) { try { if (new URL(request.headers.origin).host !== request.headers.host) { socket.close(1008, 'Use this server address.'); return; } } catch { socket.close(1008, 'Invalid origin'); return; } }
-    if (sockets.size >= 32) { socket.close(1013, 'Server connection limit'); return; }
+    if (sockets.size >= MAX_ROOM_SOCKETS) { socket.close(1013, 'Server connection limit'); return; }
     sockets.add(socket);
     const heartbeat = { lastPing: performance.now(), waitingSince: null as number | null }; heartbeats.set(socket, heartbeat);
     socket.on('pong', () => { heartbeat.waitingSince = null; });
@@ -180,7 +205,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
       try {
         if (binary || (Array.isArray(buffer) ? buffer.reduce((sum, item) => sum + item.byteLength, 0) : buffer.byteLength) > MAX_MESSAGE_BYTES) throw new Error('Use JSON messages smaller than 32 KiB.');
         if (now() - windowAt >= 1000) { windowAt = now(); messageCount = 0; }
-        if (++messageCount > 80) throw new Error('Too many messages. Wait a moment.');
+        if (++messageCount > MAX_SOCKET_MESSAGES_PER_SECOND) throw new Error('Too many messages. Wait a moment.');
         message = record(JSON.parse(buffer.toString())) as Wire; assertSerializable(message);
         if (message.v !== CONTRACT_VERSION) throw new Error('VERSION: Refresh this browser to use the current game collection.');
         string(message.type, 40);
@@ -194,15 +219,15 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
             if (message.type === 'room.create' && roomId) throw new Error('A room is already open. Use its join code.');
             if (message.type === 'room.join' && (!roomId || message.code !== code)) throw new Error('Room code not found. Check the six characters.');
             const display = message.type === 'room.create' || message.role === 'display';
-            if (display && [...identities.values()].filter(item => !item.playerId).length >= 12) throw new Error('Display limit reached.');
+            if (display && [...identities.values()].filter(item => !item.playerId).length >= MAX_ROOM_DISPLAYS) throw new Error('Display limit reached.');
             const name = display ? 'Shared display' : string(message.name, 16).trim(); if (!name) throw new Error('Enter a player name.');
             // A lost browser session rejoins by name: a matching disconnected seat (never the host's) is taken over.
             const same = display ? undefined : players().find(item => item.id !== hostId && item.name.toLocaleLowerCase() === name.toLocaleLowerCase());
             if (same?.socket) throw new Error(`${same.name} is already playing. Pick another name, or wait a few seconds if that was you.`);
             if (same) { same.token = randomBytes(32).toString('hex'); identity = resume(same, socket); }
             else {
-              if (!display && players().length >= 10) throw new Error('All ten seats are occupied. Ask the host to remove a disconnected player.');
-              const id = randomUUID(); identity = { id, token: randomBytes(32).toString('hex'), playerId: display ? null : id, name, color: display ? COLORS[0] : COLORS[players().length], ready: false, socket, seq: -1, disconnectedAt: null };
+              if (!display && players().length >= MAX_ROOM_PLAYERS) throw new Error(`All ${MAX_ROOM_PLAYERS} seats are occupied. Ask the host to remove a disconnected player.`);
+              const id = randomUUID(); identity = { id, token: randomBytes(32).toString('hex'), playerId: display ? null : id, name, color: display ? COLORS[0] : freeColor(), ready: false, socket, seq: -1, disconnectedAt: null };
               identities.set(id, identity);
             }
             if (message.type === 'room.create') { roomId = randomUUID(); code = options.code ?? Array.from({ length: 6 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[randomInt(31)]).join(''); hostId = identity.id; }
@@ -215,7 +240,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
             requireHost(identity);
             if (phase !== 'lobby' || !selected?.manifest.supportsSolo || typeof message.play !== 'boolean') throw Error('Choose a solo-capable game before joining on this screen.');
             if (message.play && !identity.playerId && players().length >= selected.manifest.players.max) throw Error('All player seats are occupied.');
-            identity.color = COLORS.find(color => !players().some(player => player !== identity && player.color === color)) ?? COLORS[0];
+            identity.color = freeColor(identity);
             identity.playerId = message.play ? identity.id : null; identity.name = 'Host'; identity.ready = message.play && !selected.rules.parseLobbyChoice;
             broadcastRoom(); welcome(identity); break;
           }
@@ -229,6 +254,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
           }
           case 'room.ready':
             if (phase !== 'lobby' || !identity.playerId || typeof message.ready !== 'boolean') throw new Error('Ready is only available in the lobby.');
+            if (message.ready && !identity.ready && roundFull()) throw new Error(`All ${selected!.manifest.players.max} spots in this round are taken. You will watch this one.`);
             if (selected?.rules.parseLobbyChoice) {
               if (message.lobbyId !== lobbyId) throw new Error('This lobby has changed.');
               if (message.ready) selected.rules.parseLobbyChoice(identity.lobbyChoice, true);
@@ -248,13 +274,15 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
           }
           case 'round.start': {
             requireHost(identity); if (!selected || phase !== 'lobby') throw new Error('Select a game and wait in the lobby first.');
-            const roster = players(); const { min, max } = selected.manifest.players;
-            if (roster.length < min || roster.length > max) throw new Error(`This game needs ${min}–${max} players.`);
+            const roster = lineup(selected); const { min, max } = selected.manifest.players;
+            if (roster.length < min || roster.length > max) throw new Error(`This game needs ${min}–${max} ${roster.length < players().length ? 'Ready players' : 'players'}.`);
+            // The host's screen is the shared display, so a seated host either plays or steps down to watch.
+            if (identity.playerId && !roster.includes(identity)) throw new Error('Tap Ready, or choose Watch only, before starting a round without yourself.');
             if (roster.some(item => !item.socket || !item.ready)) throw new Error('Every player must be connected and Ready. Remove disconnected seats or wait for them.');
             if (selected.rules.parseLobbyChoice) for (const seat of roster) selected.rules.parseLobbyChoice(seat.lobbyChoice, true);
             settings = selected.rules.validateSettings(settings); assertSerializable(settings);
             selected.rules.validateStart?.(roster.map(item => ({ id: item.playerId!, name: item.name, color: item.color, ...(item.lobbyChoice === undefined ? {} : { lobbyChoice: item.lobbyChoice }) })), settings);
-            round = { encoder: new SnapshotEncoder(), publicFrame: null, id: randomUUID(), worldId: randomUUID(), game: selected, state: null, players: roster.map(item => item.playerId!), inputs: new Map(), inputAt: new Map(), required: new Set([...identities.values()].filter(item => item.socket).map(item => item.id)), loaded: new Set(), deadline: now() + (options.prepareTimeoutMs ?? selected.manifest.prepareTimeoutMs ?? 20000), startAt: null, acks: new Map(), actionCounts: new Map(), actionWindows: new Map(), clock: null, lastLegacyTick: now(), lastLegacySchedule: -Infinity, lastSnapshot: -Infinity };
+            round = { encoder: new SnapshotEncoder(), publicFrame: null, id: randomUUID(), worldId: randomUUID(), game: selected, state: null, players: roster.map(item => item.playerId!), inputs: new Map(), inputAt: new Map(), required: screens(roster), loaded: new Set(), deadline: now() + (options.prepareTimeoutMs ?? selected.manifest.prepareTimeoutMs ?? 20000), startAt: null, acks: new Map(), actionCounts: new Map(), actionWindows: new Map(), clock: null, lastLegacyTick: now(), lastLegacySchedule: -Infinity, lastSnapshot: -Infinity };
             phase = 'preparing'; notice = null; broadcastRoom(); for (const item of identities.values()) send(item.socket, 'round.prepare', { roundId: round.id, gameId: selected.manifest.id, deadline: round.deadline }); break;
           }
           // A cancelled load can leave readiness in flight; it must not affect a newer round.
@@ -324,7 +352,7 @@ export function createRoomServer(server: Server, games: RegisteredGame[], option
           round.lastLegacyTick = time;
           for (const id of round.players) round.inputs.set(id, round.game.rules.neutralInput()); phase = 'playing'; broadcastRoom();
           checkpoint(round);
-        } else if (time >= round.deadline && round.startAt === null) { const missing = [...round.required].filter(id => !round!.loaded.has(id) || !identities.get(id)?.socket).map(id => identities.get(id)?.name ?? 'A screen'); failRound(`Loading timed out for ${missing.join(', ')}`); return; }
+        } else if (time >= round.deadline && round.startAt === null) { const missing = [...round.required].filter(id => !round!.loaded.has(id) || !identities.get(id)?.socket).map(id => identities.get(id)?.name ?? 'A screen'); failRound(`Loading timed out for ${listNames(missing)}`); return; }
       }
       if (round?.state !== null && round && phase === 'playing') {
         const current = round;

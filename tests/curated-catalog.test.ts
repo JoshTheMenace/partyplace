@@ -33,7 +33,9 @@ test('editing the separate source file updates reads without restarting; invalid
     assert.equal((await readCatalog(path))[0].games.length, 2);
     await writeFile(path, '{'); await assert.rejects(readCatalog(path));
     await writeFile(path, JSON.stringify({ ...source, sources: [{ ...source.sources[0], games: [{ ...game, launch: 'room', playUrl: undefined }] }] }));
-    await assert.rejects(readCatalog(path, new Set(['kart-party'])), /Unknown room game/);
+    await assert.rejects(readCatalog(path, new Map([['kart-party', { min: 1, max: 10 }]])), /Unknown room game/);
+    await writeFile(path, JSON.stringify({ ...source, sources: [{ ...source.sources[0], games: [{ ...game, id: 'kart-party', launch: 'room', playUrl: undefined }] }] }));
+    assert.deepEqual((await readCatalog(path, new Map([['kart-party', { min: 1, max: 64 }]])))[0].games[0].players, { min: 1, max: 64 });
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 test('old favorites/history do not fill My Library; saved entries are validated and deduplicated', () => {

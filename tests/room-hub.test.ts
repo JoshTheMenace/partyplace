@@ -11,7 +11,7 @@ import { parsePublicOrigin } from '../apps/party-server/src/network-address';
 import type { RegisteredGame } from '../apps/party-server/src/room-server';
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const game: RegisteredGame = {
-  manifest: { contractVersion: '1.0', id: 'hub-test', title: 'Hub test', description: 'Test fixture', assetBase: '/games/hub-test/', modes: ['shared-display'], players: { min: 2, max: 10 }, orientation: { controller: 'any', personalView: 'any' }, timing: 'turn-based', input: ['action'], privatePlayerViews: true, supportsSolo: false, sessionControls: ['save'] },
+  manifest: { contractVersion: '1.0', id: 'hub-test', title: 'Hub test', description: 'Test fixture', assetBase: '/games/hub-test/', modes: ['shared-display'], players: { min: 2, max: 64 }, orientation: { controller: 'any', personalView: 'any' }, timing: 'turn-based', input: ['action'], privatePlayerViews: true, supportsSolo: false, sessionControls: ['save'] },
   rules: {
     validateSettings: () => ({}), parseInput: () => null, neutralInput: () => null, parseAction: () => null,
     create: ctx => ({ count: 0, players: ctx.players.map(p => p.id) }), applyAction: state => { state.count++; },
@@ -29,14 +29,14 @@ class Peer {
     throw Error(`Timed out: ${type}`);
   }
 }
-async function harness(maxRooms = 32) {
+async function harness(limits: { maxRooms?: number; maxConnections?: number; maxAddressUpgrades?: number } = {}) {
   const saveRoot = await mkdtemp(join(tmpdir(), 'party-hub-'));
   const server = createServer((req, res) => {
     const room = hub.roomForCode(req.headers['x-party-room']);
     if (!room) { res.writeHead(401).end(); return; }
     void serveWorldSave(req, res, room);
   });
-  const hub = createRoomHub(server, [game], { saveRoot, maxRooms, sweepMs: 10, roomOptions: { tickMs: 5, startDelayMs: 5, hostGraceMs: 100 } });
+  const hub = createRoomHub(server, [game], { saveRoot, ...limits, sweepMs: 10, roomOptions: { tickMs: 5, startDelayMs: 5, hostGraceMs: 100 } });
   await new Promise<void>(done => server.listen(0, '127.0.0.1', done));
   const address = server.address(); assert(address && typeof address !== 'string');
   const url = `http://127.0.0.1:${address.port}`;
@@ -52,7 +52,7 @@ async function party(h: Awaited<ReturnType<typeof harness>>, count = 2) {
   for (let i = 0; i < count; i++) { const peer = await h.connect(); peer.send('room.join', { code: welcome.room.code, name: `Player ${i}` }); seats.push(await peer.take('room.welcome')); phones.push(peer); }
   host.send('game.select', { gameId: game.manifest.id }); await host.take('room.state', p => p.room.phase === 'lobby');
   for (const peer of phones) peer.send('room.ready', { ready: true });
-  await host.take('room.state', p => p.room.players.every((s: any) => s.ready));
+  await host.take('room.state', p => p.room.phase === 'lobby' && p.room.players.length === count && p.room.players.every((s: any) => s.ready));
   host.send('round.start'); const prepare = await host.take('round.prepare');
   for (const peer of [host, ...phones]) peer.send('round.ready', { roundId: prepare.roundId });
   await host.take('game.snapshot');
@@ -62,7 +62,7 @@ async function party(h: Awaited<ReturnType<typeof harness>>, count = 2) {
 test('two groups independently play, save, reconnect, finish and replay on the same server', async () => {
   const h = await harness();
   try {
-    const a = await party(h, 10), b = await party(h);
+    const a = await party(h, 32), b = await party(h);
     assert.notEqual(a.welcome.room.code, b.welcome.room.code);
     assert.notEqual(a.welcome.room.id, b.welcome.room.id);
     a.phones[0].send('game.action', { roundId: a.roundId, actionId: 'one', payload: null });
@@ -101,7 +101,7 @@ test('two groups independently play, save, reconnect, finish and replay on the s
 });
 
 test('capacity, bad room codes, origin rejection, and expired-room cleanup leave existing rooms usable', async () => {
-  const h = await harness(1);
+  const h = await harness({ maxRooms: 1 });
   try {
     await assert.rejects(h.connect('https://unrelated.example'), /403/);
     const host = await h.connect(); host.send('room.create'); const welcome = await host.take('room.welcome');
@@ -112,6 +112,13 @@ test('capacity, bad room codes, origin rejection, and expired-room cleanup leave
     extra.send('room.rejoin', { code: welcome.room.code, token: welcome.token }); assert.equal((await extra.take('error')).code, 'REJOIN');
     extra.send('room.create'); assert((await extra.take('room.welcome')).room.id);
   } finally { await h.close(); }
+});
+
+test('the hub bounds shared connections and upgrades per address', async () => {
+  const full = await harness({ maxConnections: 2 });
+  try { await full.connect(); await full.connect(); await assert.rejects(full.connect(), /429/); } finally { await full.close(); }
+  const busy = await harness({ maxAddressUpgrades: 3 });
+  try { for (let i = 0; i < 3; i++) (await busy.connect()).socket.close(); await assert.rejects(busy.connect(), /429/); } finally { await busy.close(); }
 });
 
 test('public invite origins preserve HTTPS and reject paths and credentials', () => {
