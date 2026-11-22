@@ -5,6 +5,7 @@ import { WebSocket } from 'ws';
 import { games } from '../apps/party-server/src/registry';
 import { createRoomServer } from '../apps/party-server/src/room-server';
 import type { Choice, View } from '../packages/games/night-job/src/model';
+import { decode, ownView, type Wire } from '../packages/games/night-job/src/wire';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 type Packet = Record<string, any>;
@@ -67,11 +68,15 @@ for (const count of [1, 4]) test(`Night Job real room: ${count} phones and a ded
       screens.at(-1)!.send('round.ready', { roundId: preparing.roundId });
       return host.take('game.snapshot', packet => packet.roundId === preparing.roundId);
     };
-    const first = await prepare(true), roundId = first.roundId, initial = first.publicView as View;
+    // What the TV draws from a snapshot: the public view, unpacked as the browser does. The roster rides only on a socket's first snapshot
+    // (manifest snapshotCache), so later ones borrow it.
+    let base: Wire['base'] | undefined;
+    const shown = (packet: Packet) => { base ??= packet.publicView.base; return decode({ final: null, ...packet.publicView, base }).cast; };
+    const first = await prepare(true), roundId = first.roundId, initial = shown(first);
     assert.deepEqual(initial.players.map(player => player.id), ids);
     assert.deepEqual(initial.players.map(player => player.role), roles.slice(0, count));
-    assert.equal(initial.phase, 'infiltrate'); assert.equal(first.privateView, null);
-    const advance = async () => { now += 100; return (await host.take('game.snapshot', packet => packet.roundId === roundId && packet.serverTime === now)).publicView as View; };
+    assert.equal(initial.phase, 'infiltrate'); assert.equal(first.privateView, null, 'the display has no private view');
+    const advance = async () => { now += 100; return shown(await host.take('game.snapshot', packet => packet.roundId === roundId && packet.serverTime === now)); };
     const player = (view: View) => view.players.find(value => value.id === ids[0])!;
     seats[0].send('input.state', { roundId, seq: 1, payload: { x: 1, y: 0, sneak: false } }); await seats[0].flush();
     const moved = await advance(); assert(player(moved).x > player(initial).x, 'held input must move the authoritative player');
@@ -90,7 +95,10 @@ for (const count of [1, 4]) test(`Night Job real room: ${count} phones and a ded
     assert.equal(resumed.playerId, ids[0]); assert.equal(resumed.room.players.length, count);
     assert.deepEqual(resumed.room.players.find((value: any) => value.id === ids[0]).lobbyChoice, { role: 'cracker', tool: 'smoke' });
     seats[0] = replacement;
-    const retained = (await replacement.take('game.snapshot', packet => packet.roundId === roundId)).publicView as View;
+    const rejoined = await replacement.take('game.snapshot', packet => packet.roundId === roundId), retained = shown(rejoined);
+    assert.ok(rejoined.publicView.base, 'a rejoining socket is sent the roster again');
+    assert.deepEqual(Object.keys(rejoined.privateView), ['hint', 'live']); assert.equal(rejoined.privateView.live, null, 'one crew: the shared screen already carries it');
+    assert.equal(ownView({ final: null, ...rejoined.publicView }, rejoined.privateView, ids[0])!.players.find(value => value.id === ids[0])!.hint, rejoined.privateView.hint);
     assert.equal(player(retained).role, 'cracker'); assert.equal(player(retained).charges, player(smoked).charges);
     const reconnected = await advance(); assert.equal(player(reconnected).x, player(retained).x, 'reconnect must cancel held input');
     const abort = async (id: string) => {
@@ -102,7 +110,7 @@ for (const count of [1, 4]) test(`Night Job real room: ${count} phones and a ded
     const middle = await prepare(false); assert.notEqual(middle.roundId, roundId); await abort(middle.roundId);
     lobby = await select('night-job');
     assert(lobby.players.every((value: any) => !value.ready && value.lobbyChoice === undefined));
-    const replay = await prepare(true), fresh = replay.publicView as View;
+    base = undefined; const replay = await prepare(true), fresh = shown(replay);
     assert.notEqual(replay.roundId, roundId); assert.notEqual(fresh.heistId, initial.heistId);
     assert.deepEqual(fresh.players.map(value => value.id), ids); assert.equal(player(fresh).charges, player(initial).charges);
     assert.equal(fresh.collected, 0); assert.equal(fresh.objectiveTaken, false); assert.deepEqual(fresh.smoke, []);
@@ -110,5 +118,47 @@ for (const count of [1, 4]) test(`Night Job real room: ${count} phones and a ded
     seats[0].send('game.action', { ...action, actionId: 'old-round' });
     const stale = await seats[0].take('action.ack', packet => packet.actionId === 'old-round');
     assert.equal(stale.accepted, false); assert.match(stale.reason, /old round/);
+  } finally { await room.close(); await new Promise<void>(resolve => server.close(() => resolve())); }
+});
+
+test('Night Job real room: nine phones play a crew night; each socket gets its own crew, the crew on the TV, and the roster once', async () => {
+  let now = 1000;
+  const server = createServer(), room = createRoomServer(server, games.filter(game => game.manifest.id === 'night-job'), { now: () => now, tickMs: 5, startDelayMs: 0, prepareTimeoutMs: 20000 });
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  const address = server.address(); assert(address && typeof address !== 'string');
+  const connect = async () => { const peer = new Peer(new WebSocket(`ws://127.0.0.1:${address.port}/ws`)); await new Promise<void>(resolve => peer.socket.once('open', resolve)); return peer; };
+  try {
+    const host = await connect(); host.send('room.create'); const created = await host.take('room.welcome');
+    host.send('game.select', { gameId: 'night-job', play: true });
+    const lobby = (await host.take('room.state', packet => packet.room.gameId === 'night-job' && packet.room.phase === 'lobby')).room, seats: Peer[] = [], ids: string[] = [];
+    for (let index = 0; index < 9; index++) { const phone = await connect(); phone.send('room.join', { code: created.room.code, name: `Crewmate${index}` }); seats.push(phone); ids.push((await phone.take('room.welcome')).playerId); }
+    for (const seat of seats) seat.send('room.ready', { ready: true, lobbyId: lobby.lobbyId });
+    await host.take('room.state', packet => packet.room.players.length === 9 && packet.room.players.every((player: any) => player.ready));
+    host.send('round.start'); const preparing = await host.take('round.prepare');
+    for (const peer of [host, ...seats]) peer.send('round.ready', { roundId: preparing.roundId });
+    const roundId = preparing.roundId, firsts = await Promise.all([host, ...seats].map(peer => peer.take('game.snapshot', packet => packet.roundId === roundId)));
+    const wire = firsts[0].publicView as Wire, night = decode(wire);
+    assert.deepEqual(night.crews, [[0, 1, 2], [3, 4, 5], [6, 7, 8]]); assert.equal(night.rival, true); assert.equal(wire.cast, 0); assert.equal(firsts[0].privateView, null);
+    assert.deepEqual(wire.base.roster.map(entry => entry[0]), ids); assert.ok(wire.ends > wire.now, 'a crew night has a sunrise');
+    firsts.slice(1).forEach((packet, seat) => {
+      const crew = Math.floor(seat / 3), view = ownView(packet.publicView, packet.privateView, ids[seat])!;
+      assert.ok(packet.publicView.base, 'every socket is sent the roster with its first snapshot');
+      assert.equal(packet.privateView.live === null, crew === 0, 'the crew on the TV is not sent twice');
+      assert.equal(view.crew, crew); assert.deepEqual(view.players.map(player => player.id), ids.slice(crew * 3, crew * 3 + 3)); assert.deepEqual(view.players.map(player => player.seat), [0, 1, 2].map(i => crew * 3 + i));
+      assert.equal(view.heistId, `${roundId}:${crew}`);
+    });
+    // A thief in the third crew moves and uses its tool: only its own heist changes, and the next snapshots omit the roster.
+    seats[7].send('input.state', { roundId, seq: 1, payload: { x: 1, y: 0, sneak: false } }); await seats[7].flush();
+    seats[7].send('game.action', { roundId, actionId: 'wrong-crew', payload: { type: 'tool', heistId: `${roundId}:0` } });
+    assert.equal((await seats[7].take('action.ack', packet => packet.actionId === 'wrong-crew')).accepted, false);
+    seats[7].send('game.action', { roundId, actionId: 'own-crew', payload: { type: 'tool', heistId: `${roundId}:2` } });
+    assert.equal((await seats[7].take('action.ack', packet => packet.actionId === 'own-crew')).accepted, true);
+    now += 100;
+    const [third, first] = await Promise.all([seats[7], seats[0]].map(peer => peer.take('game.snapshot', packet => packet.roundId === roundId && packet.serverTime === now)));
+    assert.equal(third.publicView.base, undefined, 'the roster rides once per socket');
+    const moved = ownView({ ...third.publicView, base: wire.base, final: null }, third.privateView, ids[7])!, still = ownView({ ...first.publicView, base: wire.base, final: null }, first.privateView, ids[0])!;
+    assert.ok(moved.players[1].x > still.players[1].x, 'held input moved the right thief'); assert.equal(moved.smoke.length, 1); assert.equal(moved.players[1].charges, 1);
+    assert.equal(still.smoke.length, 0); assert.ok(still.players.every(player => player.charges === 2));
+    assert.equal(JSON.stringify(first).includes(String(moved.players[1].x)), false, 'the first crew is sent nothing of the third crew\'s positions');
   } finally { await room.close(); await new Promise<void>(resolve => server.close(() => resolve())); }
 });

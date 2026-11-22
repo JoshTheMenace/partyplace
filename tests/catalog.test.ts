@@ -33,7 +33,7 @@ test('Night Job discovery and room metadata agree on its roster, controls and de
   const room = catalog.find(game => game.id === 'night-job')!;
   const discovery = parseCatalog(JSON.parse(readFileSync(new URL('../catalog/sources.json', import.meta.url), 'utf8'))).flatMap(source => source.games).find(game => game.id === room.id)!;
   for (const key of ['title', 'description', 'players', 'supportsSolo', 'requiresSharedDisplay', 'cooperative', 'controls', 'playTime', 'status', 'creator', 'detail', 'capabilities'] as const) assert.deepEqual(discovery[key], room[key], key);
-  assert.deepEqual(room.players, { min: 1, max: 4 });
+  assert.deepEqual(room.players, { min: 1, max: 64 });
   assert.equal(room.status, 'ready');
   assert.equal(room.supportsSolo, false); assert.equal(room.requiresSharedDisplay, true);
   assert.deepEqual(room.controls, ['Touch', 'Phone controllers']);

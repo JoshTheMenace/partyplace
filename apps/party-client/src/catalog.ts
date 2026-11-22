@@ -6,7 +6,7 @@ export type CatalogFilter = 'all' | 'solo' | 'shared-screen' | 'no-tv' | 'party'
 const details: Record<string, Pick<CatalogGame, 'category' | 'status' | 'playTime' | 'searchTerms'>> = {
   'inkwave': { category: 'Party', status: 'ready', playTime: '1–5 min / match', searchTerms: ['ink', 'shooter', 'turf war', '4v4', 'teams', '3d'] },
   'ichi': { category: 'Party', status: 'ready', playTime: '10–25 min', searchTerms: ['cards', 'strategy', 'uno', 'stacking', 'ichi', 'tables', 'big group'] },
-  'night-job': { category: 'Co-op', status: 'ready', playTime: 'Quick heists · replayable', searchTerms: ['heist', 'stealth', 'thieves', 'cooperative', '3d', 'specialists'] },
+  'night-job': { category: 'Co-op', status: 'ready', playTime: 'Quick heists · replayable', searchTerms: ['heist', 'stealth', 'thieves', 'cooperative', '3d', 'specialists', 'crews', 'big group'] },
   'phonedig': { category: 'Co-op', status: 'ready', playTime: '6 min shifts · or dig until you drop', searchTerms: ['mining', 'digging', 'arcade', 'cooperative', 'pixel art', 'crews', 'race', 'big group'] },
   'hotpot': { category: 'Party', status: 'ready', playTime: '10–20 min', searchTerms: ['cards', 'ingredients', 'sets', 'strategy', 'bots'] },
   'starship-scramble': { category: 'Co-op', status: 'ready', playTime: '20–45 min · save anytime', searchTerms: ['space', 'fleet', 'strategy', 'ships', 'expedition', 'cooperative'] },
@@ -18,7 +18,7 @@ const details: Record<string, Pick<CatalogGame, 'category' | 'status' | 'playTim
   'kitchen-rush': { category:'Co-op',status:'ready',playTime:'3–5 min / level',searchTerms:['cooking','teamwork','campaign','3d','kitchens','big group'] },
 };
 const descriptions: Record<string, string> = {
-  'night-job': 'Three original 3D heists. Eight specialists. Get the goods and your whole crew out.',
+  'night-job': 'Three original 3D heists and eight specialists. One crew of up to four, or a whole room of rival crews racing for the fastest clean getaway.',
   'blockwild': 'Explore, craft and build your own world, or chase coins and cause mischief in Caper City.',
   'kitchen-rush': 'Cook orders and keep dinner moving, solo or together. Big groups split into rival kitchens.',
 };
