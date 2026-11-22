@@ -27,7 +27,7 @@ test('one host plays all three solo games, reconnects and changes to Kart with t
       if (welcome.room.lobbyId) { host.send('room.ready', { ready:true, lobbyId:welcome.room.lobbyId }); await host.take('room.state', p => p.room.players[0].ready); } else assert(welcome.room.players[0].ready);
       host.send('round.start'); const preparation = await host.take('round.prepare'); host.send('round.ready', {roundId:preparation.roundId});
       const snap = await host.take('game.snapshot', p => p.roundId === preparation.roundId);
-      assert.equal((snap.publicView.players ?? snap.publicView.racers.filter((p:any) => !p.bot)).length,1);
+      assert.equal((snap.publicView.who ?? snap.publicView.players ?? snap.publicView.racers.filter((p:any) => !p.bot)).length,1);
       host.send('input.state', {roundId:preparation.roundId,seq:1,payload:id === 'kart-party' ? {steer:1} : {x:1,y:0}});
       if (id === 'blockwild') { host.send('round.finish', {roundId:preparation.roundId}); await host.take('room.state', p => p.room.phase === 'results'); }
       else { host.send('round.abort', {roundId:preparation.roundId}); await host.take('room.state', p => p.room.phase === 'lobby'); }
@@ -46,7 +46,8 @@ test('ten phone seats survive Kitchen → Kart → Kitchen; a host cannot take a
     for (let i=0;i<10;i++) { const phone = await connect(); phone.send('room.join',{code:original.room.code,name:`Player ${i}`}); ids.push((await phone.take('room.welcome')).playerId); phones.push(phone); }
     for (const id of ['kitchen-rush','kart-party','kitchen-rush']) {
       host.send('game.select',{gameId:id}); const selected = await host.take('room.welcome',p => p.room.gameId === id); assert.equal(selected.room.code,original.room.code); assert.deepEqual(selected.room.players.map((p:any) => p.id),ids);
-      host.send('room.play',{play:true}); await host.take('error'); assert.equal(room.roomView().players.length,10);
+      // Kitchen Rush seats ten, so the host cannot take an eleventh seat; Kart Party seats the whole room, so only the Kitchen legs check it.
+      if (id === 'kitchen-rush') { host.send('room.play',{play:true}); await host.take('error'); } assert.equal(room.roomView().players.length,10);
       phones[0].send('room.play',{play:false}); await phones[0].take('error');
       for (const phone of phones) phone.send('room.ready',{ready:true,lobbyId:selected.room.lobbyId}); await host.take('room.state',p => p.room.gameId === id && p.room.players.every((x:any) => x.ready));
       host.send('round.start'); const preparation = await host.take('round.prepare'); for (const peer of [host,...phones]) peer.send('round.ready',{roundId:preparation.roundId});
