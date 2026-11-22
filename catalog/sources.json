@@ -161,7 +161,7 @@
         {
           "id": "blockwild",
           "title": "Blockwild",
-          "description": "Explore, craft, and build your own world.",
+          "description": "Explore, craft and build your own world, or chase coins and cause mischief in Caper City.",
           "players": {
             "min": 1,
             "max": 10
@@ -178,7 +178,7 @@
           "creator": {
             "name": "PartyPlay"
           },
-          "detail": "Explore, craft, and build your own world.",
+          "detail": "A blocky sandbox in three modes: survive and build in the wild, build freely in creative, or run gigs, borrow vehicles and dodge the Watch in Caper City.",
           "capabilities": [
             "browser-play",
             "shared-display",
