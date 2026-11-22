@@ -169,7 +169,9 @@ test('Hijinks hosts a ten-player night: avatars, menu votes, VIP lock, private p
     const latest = async (peer: Peer, phase?: string) => { for (let i = 0; i < 300; i++) { const snap = peer.packets.filter(p => p.type === 'game.snapshot' && p.roundId === roundId).at(-1); if (snap && (!phase || snap.publicView.phase === phase)) return snap; await delay(5); } throw new Error(`No ${phase ?? ''} snapshot`); };
     const act = async (i: number, payload: Record<string, unknown>) => { const actionId = String(++seq[i]); r.phones[i]!.send('game.action', { roundId, actionId, retireThrough: seq[i]! - 1, payload }); return r.phones[i]!.take('action.ack', p => p.actionId === actionId); };
     const menu = (await latest(r.host, 'menu')).publicView;
-    assert.deepEqual(menu.players.map((p: any) => [p.id, p.avatar]), ids.map((id, i) => [id, 15 - i])); assert.equal(menu.vip, ids[0]); assert.equal(menu.mini, null);
+    // The roster rides in Hijinks' snapshot cache: only the snapshots that carry a new cache revision include it.
+    const roster = r.host.packets.find(p => p.type === 'game.snapshot' && p.roundId === roundId && p.publicView.players)!.publicView.players;
+    assert.deepEqual(roster.map((p: any) => [p.id, p.avatar]), ids.map((id, i) => [id, 15 - i])); assert.equal(menu.vip, ids[0]); assert.equal(menu.mini, null);
     assert.match((await act(1, { k: 'lock' })).reason, /Only the VIP/); assert.match((await act(0, { k: 'lock' })).reason, /Vote for a game first/);
     assert.match((await act(2, { k: 'vote', game: 'no-such-game' })).reason, /not in the library/);
     if (unready) assert.match((await act(2, { k: 'vote', game: unready.id })).reason, /not ready yet/);
@@ -190,6 +192,43 @@ test('Hijinks hosts a ten-player night: avatars, menu votes, VIP lock, private p
     const { outcome } = await r.host.take('round.results', p => p.roundId === roundId);
     assert.equal(outcome.complete, true); assert.equal(outcome.rows.length, 10); assert(outcome.rows.every((row: any) => /troph/.test(row.label)));
     assert.equal(outcome.winners.length > 0, outcome.rows.some((row: any) => row.score > 0)); assert.equal(h.party.roomView().phase, 'results');
+  } finally { await h.close(); }
+});
+
+test('Hijinks seats 32: shared characters, the roster sent once, a big-room minigame and 32 result rows', async () => {
+  const { games } = await import('../apps/party-server/src/registry');
+  const { MINIS, eligible } = await import('../packages/games/hijinks/src/minis/catalog');
+  let time = Date.now();
+  const h = await harness(games, { now: () => time, startDelayMs: 0, prepareTimeoutMs: 20000 });
+  try {
+    const r = await room(h, 32), ids = r.welcomes.map(w => w.playerId as string), seq = ids.map(() => 0);
+    r.host.send('game.select', { gameId: 'hijinks', settings: {} });
+    const { lobbyId } = (await r.host.take('room.state', p => p.room.gameId === 'hijinks' && p.room.phase === 'lobby')).room;
+    r.phones.forEach((phone, i) => { phone.send('lobby.choice', { lobbyId, payload: { avatar: i % 16 } }); phone.send('room.ready', { ready: true, lobbyId }); });
+    await r.host.take('room.state', p => p.room.players.length === 32 && p.room.players.every((player: any) => player.ready));
+    r.host.send('round.start'); const { roundId } = await r.host.take('round.prepare');
+    for (const peer of [r.host, ...r.phones]) peer.send('round.ready', { roundId });
+    const snaps = (peer: Peer) => peer.packets.filter(p => p.type === 'game.snapshot' && p.roundId === roundId);
+    const latest = async (peer: Peer, phase?: string) => { for (let i = 0; i < 600; i++) { const snap = snaps(peer).at(-1); if (snap && (!phase || snap.publicView.phase === phase)) return snap; await delay(5); } throw new Error(`No ${phase ?? ''} snapshot`); };
+    const act = async (i: number, payload: Record<string, unknown>) => { const actionId = String(++seq[i]); r.phones[i]!.send('game.action', { roundId, actionId, retireThrough: seq[i]! - 1, payload }); return r.phones[i]!.take('action.ack', p => p.actionId === actionId); };
+    await latest(r.host, 'menu');
+    const first = snaps(r.phones[31]!)[0]!.publicView;
+    assert.deepEqual(first.players.map((p: any) => [p.id, p.avatar]), ids.map((id, i) => [id, i % 16]), 'above sixteen seats two players may share a character');
+    const big = MINIS.filter(info => eligible(info, 32)).map(info => info.id);
+    assert.deepEqual(big.sort(), ['ballpark', 'bracket-brawl', 'comment-section', 'quip-clash', 'quiz-panic', 'split-decision', 'tall-tales']);
+    assert.match((await act(3, { k: 'vote', game: 'airlock' })).reason, /4–10 players/);
+    for (let i = 0; i < 32; i++) assert.equal((await act(i, { k: 'vote', game: 'ballpark' })).accepted, true);
+    assert.equal((await act(0, { k: 'lock' })).accepted, true);
+    const intro = (await latest(r.host, 'intro')).publicView;
+    assert.equal((await act(0, { k: 'skip', session: intro.current.session })).accepted, true); await latest(r.host, 'mini');
+    for (let step = 0; step < 600 && (await latest(r.host)).publicView.phase === 'mini'; step++) { time += 5000; await delay(8); }
+    const podium = (await latest(r.host, 'podium')).publicView; assert.deepEqual(podium.played, ['ballpark']); assert.equal(Object.keys(podium.podium.result.scores).length, 32);
+    // Nobody connected or dropped, so the 32-name roster crossed each socket once, not ten times a second.
+    for (const peer of [r.host, r.phones[0]!, r.phones[31]!]) assert.equal(snaps(peer).filter(p => p.publicView.players).length, 1);
+    assert.equal((await act(0, { k: 'next', session: podium.current.session })).accepted, true); await latest(r.host, 'menu');
+    assert.equal((await act(0, { k: 'end' })).accepted, true);
+    const { outcome, publicView } = await r.host.take('round.results', p => p.roundId === roundId);
+    assert.equal(outcome.complete, true); assert.equal(outcome.rows.length, 32); assert.equal(publicView.champions.length, 1);
   } finally { await h.close(); }
 });
 
