@@ -440,13 +440,13 @@
         {
           "id": "phonedig",
           "title": "Phonedig",
-          "description": "Dig for treasure, manage your air and rescue your crew in a cooperative mining adventure.",
-          "detail": "Dig for treasure, manage your air and rescue your crew in a cooperative mining adventure.",
+          "description": "Dig for your pay, burst what guards it and bank the haul before the roof comes in. Up to four share a shaft; a bigger room splits into rival crews.",
+          "detail": "You are paid for what you dig, not what you kill. One to four diggers share a shaft and a pool of lives: clear every monster on a level to bank the haul, and harpoon a fallen teammate back onto their feet. From five players up to sixty-four the room splits into crews of up to four, each in a shaft of its own, on a six-minute shift. The shared screen follows the action and the biggest share at the whistle takes it.",
           "category": "Co-op",
           "status": "ready",
           "players": {
             "min": 1,
-            "max": 4
+            "max": 64
           },
           "supportsSolo": true,
           "requiresSharedDisplay": false,
@@ -456,7 +456,7 @@
             "Touch",
             "Phone controllers"
           ],
-          "playTime": "10\u201330 min / run",
+          "playTime": "6 min shifts \u00b7 or dig until you drop",
           "launch": "room",
           "searchTerms": [
             "mining",

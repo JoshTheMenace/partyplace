@@ -7,7 +7,7 @@ const details: Record<string, Pick<CatalogGame, 'category' | 'status' | 'playTim
   'inkwave': { category: 'Party', status: 'ready', playTime: '1–5 min / match', searchTerms: ['ink', 'shooter', 'turf war', '4v4', 'teams', '3d'] },
   'ichi': { category: 'Party', status: 'ready', playTime: '10–25 min', searchTerms: ['cards', 'strategy', 'uno', 'stacking', 'ichi', 'tables', 'big group'] },
   'night-job': { category: 'Co-op', status: 'ready', playTime: 'Quick heists · replayable', searchTerms: ['heist', 'stealth', 'thieves', 'cooperative', '3d', 'specialists'] },
-  'phonedig': { category: 'Co-op', status: 'ready', playTime: '10–30 min / run', searchTerms: ['mining', 'digging', 'arcade', 'cooperative', 'pixel art'] },
+  'phonedig': { category: 'Co-op', status: 'ready', playTime: '6 min shifts · or dig until you drop', searchTerms: ['mining', 'digging', 'arcade', 'cooperative', 'pixel art', 'crews', 'race', 'big group'] },
   'hotpot': { category: 'Party', status: 'ready', playTime: '10–20 min', searchTerms: ['cards', 'ingredients', 'sets', 'strategy', 'bots'] },
   'starship-scramble': { category: 'Co-op', status: 'ready', playTime: '20–45 min · save anytime', searchTerms: ['space', 'fleet', 'strategy', 'ships', 'expedition', 'cooperative'] },
   'island-settlers': { category: 'Party', status: 'in-progress', playTime: 'About 60 min · varies', searchTerms: ['catan', 'settlers', 'board game', 'seafarers', 'cities and knights', 'explorers', 'pirates', 'barbarians', 'connect', 'strategy', 'trading'] },
