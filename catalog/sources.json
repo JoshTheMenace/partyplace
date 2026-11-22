@@ -56,12 +56,12 @@
         {
           "id": "ichi",
           "title": "Ichi",
-          "description": "Match colors, stack the penalties and shout Ichi! before anyone catches you on your last card.",
+          "description": "Match colors, hand out Gifts and shout Ichi! before anyone catches you on your last card. Big rooms split into tables.",
           "category": "Party",
           "status": "ready",
           "players": {
             "min": 2,
-            "max": 10
+            "max": 64
           },
           "supportsSolo": false,
           "requiresSharedDisplay": true,
@@ -75,7 +75,9 @@
             "cards",
             "strategy",
             "uno",
-            "stacking"
+            "stacking",
+            "tables",
+            "big group"
           ],
           "tags": [
             "cards",
@@ -85,7 +87,7 @@
           "creator": {
             "name": "PartyPlay"
           },
-          "detail": "Match colors or symbols, complete secret missions, and choose your favorite optional rule packs. A shared screen and 2\u201310 phones.",
+          "detail": "Match colors or symbols, stack penalties, bluff a +4, hand out Gift cards and race to call Ichi! on your last card. Up to ten share one table. Bigger rooms, up to 64, play at tables of four in six-minute rounds while the TV cuts between them.",
           "capabilities": [
             "browser-play",
             "shared-display",
