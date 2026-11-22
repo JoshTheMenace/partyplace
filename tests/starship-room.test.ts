@@ -4,15 +4,24 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { WebSocket } from 'ws';
 import { MAX_MESSAGE_BYTES } from '../packages/party-contract/src/index';
+import { SnapshotDecoder } from '../packages/party-contract/src/snapshot-cache';
 import { games } from '../apps/party-server/src/registry';
 import { createRoomServer } from '../apps/party-server/src/room-server';
 import type { PublicView } from '../packages/games/starship-scramble/src/contracts';
+import { manifest } from '../packages/games/starship-scramble/src/manifest';
+import { decode } from '../packages/games/starship-scramble/src/wire';
 
 type Packet = Record<string, any>;
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 class Peer {
-  packets: Packet[] = []; seq = 0; biggest = 0;
-  constructor(public socket: WebSocket) { socket.on('message', data => { this.biggest = Math.max(this.biggest, data.toString().length); this.packets.push(JSON.parse(data.toString())); }); socket.on('error', () => {}); }
+  packets: Packet[] = []; seq = 0; biggest = 0; cache = new SnapshotDecoder();
+  /** Snapshots arrive packed, with the rarely-changing fields sent once per change: restore them as a phone does, so `publicView` is the view model. */
+  constructor(public socket: WebSocket) {
+    socket.on('message', data => { this.biggest = Math.max(this.biggest, data.toString().length); const packet = JSON.parse(data.toString());
+      if (packet.type === 'game.snapshot') { const full = this.cache.decode(packet, manifest.snapshotCache); if (!full) return this.send('snapshot.sync', { roundId: packet.roundId }); packet.publicView = decode(full.publicView as Parameters<typeof decode>[0]); }
+      this.packets.push(packet); });
+    socket.on('error', () => {});
+  }
   send(type: string, payload: Record<string, unknown> = {}) { this.socket.send(JSON.stringify({ v: '1.0', type, ...payload })); }
   async take(type: string, predicate: (packet: Packet) => boolean = () => true): Promise<Packet> {
     for (let attempt = 0; attempt < 800; attempt++) {
@@ -69,7 +78,7 @@ test('Starship Scramble real room: two phones launch, vote, jump, save and reloa
     v = await view(x => x.phase !== 'map' || x.map.currentId === link);
     assert.equal(v.map.currentId, link); assert.equal(v.fleetStats.jumps, 1);
     const save = JSON.parse(room.exportSave(created.token, roundId));
-    assert.equal(save.v, 1);
+    assert.equal(save.v, 2);
     // Reload the world: the same two phones take the saved seats in roster order.
     const loaded = room.loadSave(created.token, roundId, save);
     void loaded;
