@@ -4,7 +4,7 @@ import type { CatalogGame, CatalogCapability } from '../../../packages/party-cat
 export type { CatalogGame, CatalogCapability, CatalogSource } from '../../../packages/party-catalog/src/index';
 export type CatalogFilter = 'all' | 'solo' | 'shared-screen' | 'no-tv' | 'party' | 'co-op' | 'in-progress';
 const details: Record<string, Pick<CatalogGame, 'category' | 'status' | 'playTime' | 'searchTerms'>> = {
-  'inkwave': { category: 'Party', status: 'ready', playTime: '1–5 min / match', searchTerms: ['ink', 'shooter', 'turf war', '4v4', 'teams', '3d'] },
+  'inkwave': { category: 'Party', status: 'ready', playTime: '1–5 min / match', searchTerms: ['ink', 'shooter', 'turf war', '4v4', 'teams', '3d', 'big room'] },
   'ichi': { category: 'Party', status: 'ready', playTime: '10–25 min', searchTerms: ['cards', 'strategy', 'uno', 'stacking', 'ichi', 'tables', 'big group'] },
   'night-job': { category: 'Co-op', status: 'ready', playTime: 'Quick heists · replayable', searchTerms: ['heist', 'stealth', 'thieves', 'cooperative', '3d', 'specialists', 'crews', 'big group'] },
   'phonedig': { category: 'Co-op', status: 'ready', playTime: '6 min shifts · or dig until you drop', searchTerms: ['mining', 'digging', 'arcade', 'cooperative', 'pixel art', 'crews', 'race', 'big group'] },
