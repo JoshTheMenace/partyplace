@@ -15,12 +15,12 @@ const details: Record<string, Pick<CatalogGame, 'category' | 'status' | 'playTim
   'hijinks': { category:'Party',status:'ready',playTime:'All night',searchTerms:['jokes','writing','drawing','trivia','bluffing','voting','minigames','party pack','trophies'] },
   'trolley-court': { category:'Party',status:'ready',playTime:'20–40 min',searchTerms:['cards','trolley problem','debate','arguing','teams','judge','dilemma','writing'] },
   'blockwild': { category:'Sandbox',status:'ready',playTime:'Open-ended',searchTerms:['building','crafting','exploration','creative','survival','3d'] },
-  'kitchen-rush': { category:'Co-op',status:'ready',playTime:'3–5 min / level',searchTerms:['cooking','teamwork','campaign','3d'] },
+  'kitchen-rush': { category:'Co-op',status:'ready',playTime:'3–5 min / level',searchTerms:['cooking','teamwork','campaign','3d','kitchens','big group'] },
 };
 const descriptions: Record<string, string> = {
   'night-job': 'Three original 3D heists. Eight specialists. Get the goods and your whole crew out.',
   'blockwild': 'Explore, craft, and build your own world.',
-  'kitchen-rush': 'Cook orders and keep dinner moving, solo or together.',
+  'kitchen-rush': 'Cook orders and keep dinner moving, solo or together. Big groups split into rival kitchens.',
 };
 export const kartParty: CatalogGame = { id:'kart-party',title:'Kart Party',description:'Five toybox courses, finishing on Rainbow Road, eight drivers and room for 64 racers. Drift for mini-turbos, grab items, and race friends or CPUs.',category:'Racing',status:'ready',players:{min:1,max:64},supportsSolo:true,requiresSharedDisplay:false,cooperative:false,controls:['Keyboard','Touch','Phone controllers'],playTime:'5–15 min',launch:'room',searchTerms:['racing','driving','solo','cpu','3d'],tags:['racing','driving','solo','CPU rivals'],creator:{name:'PartyPlay'},detail:'Race solo against CPU drivers or bring the whole room: up to 64 people can race at once. Play on this screen with a keyboard, touch or gamepad, or use phones as controllers. Up to four racers share the TV in split screen; bigger groups race on their own phones while the TV shows a live broadcast.',capabilities:['browser-play','solo','keyboard','touch','phone-controllers'] };
 export function gameCatalog(manifests: readonly GameManifest[]): CatalogGame[] {

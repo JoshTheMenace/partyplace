@@ -201,10 +201,10 @@
         {
           "id": "kitchen-rush",
           "title": "Kitchen Rush",
-          "description": "Cook orders and keep dinner moving, solo or together.",
+          "description": "Cook orders and keep dinner moving, solo or together. Big groups split into rival kitchens.",
           "players": {
             "min": 1,
-            "max": 10
+            "max": 64
           },
           "supportsSolo": true,
           "requiresSharedDisplay": false,
@@ -218,7 +218,7 @@
           "creator": {
             "name": "PartyPlay"
           },
-          "detail": "Cook orders and keep dinner moving, solo or together.",
+          "detail": "Chop, cook, plate and serve against the clock in eight hand-built kitchens with fires, conveyors, ice, drawbridges and portals. Up to ten chefs share one kitchen. Bigger groups, up to 64, become a restaurant of parallel kitchens that share the stars and race for Kitchen of the Night, with each phone showing its own kitchen.",
           "capabilities": [
             "browser-play",
             "shared-display",
