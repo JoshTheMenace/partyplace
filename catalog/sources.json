@@ -164,7 +164,7 @@
           "description": "Explore, craft and build your own world, or chase coins and cause mischief in Caper City.",
           "players": {
             "min": 1,
-            "max": 10
+            "max": 64
           },
           "supportsSolo": true,
           "requiresSharedDisplay": false,
