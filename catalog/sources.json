@@ -352,7 +352,7 @@
         {
           "id": "sky-clash",
           "title": "Sky Clash",
-          "description": "33 Melee fighters, 30 stages. Rack up damage and launch your friends off the stage.",
+          "description": "A platform fighter above the clouds. Pick a fighter of the Reaches, rack up damage and launch your friends off the stage.",
           "category": "Party",
           "status": "in-progress",
           "players": {
@@ -368,13 +368,13 @@
           "playTime": "5\u20138 min / match",
           "launch": "room",
           "searchTerms": [
-            "melee",
-            "smash",
             "fighting",
-            "mario",
-            "fox",
-            "marth",
-            "kirby",
+            "platform fighter",
+            "brawl",
+            "sola",
+            "toll",
+            "kes",
+            "vesper",
             "cpu",
             "combat",
             "3d"
@@ -382,7 +382,7 @@
           "creator": {
             "name": "PartyPlay"
           },
-          "detail": "All 33 Melee fighter kinds: 27 with their imported Melee attributes and attack scripts, plus six bonus fighters. Thirty Melee stages, new Blender models with four costumes each, CPU rivals, a shared display and landscape phone controllers.",
+          "detail": "Sky Clash\u2019s own cast, the crew of the Reaches: Sola the lamplighter, Toll the bell-foundry automaton, Kes the kite-runner and Vesper the glasswright, each with an authored moveset, keyframed animation and four costumes. Fight on Beacon Rock and the Bellyard with CPU rivals, a shared display and landscape phone controllers. The earlier roster and stages remain selectable in a separate legacy group.",
           "capabilities": [
             "browser-play",
             "shared-display",

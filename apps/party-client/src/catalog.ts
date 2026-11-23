@@ -11,7 +11,7 @@ const details: Record<string, Pick<CatalogGame, 'category' | 'status' | 'playTim
   'hotpot': { category: 'Party', status: 'ready', playTime: '10–20 min', searchTerms: ['cards', 'ingredients', 'sets', 'strategy', 'bots'] },
   'starship-scramble': { category: 'Co-op', status: 'ready', playTime: '20–90+ min · save anytime', searchTerms: ['space', 'fleet', 'strategy', 'ships', 'expedition', 'cooperative'] },
   'island-settlers': { category: 'Party', status: 'in-progress', playTime: 'About 60 min · varies', searchTerms: ['catan', 'settlers', 'board game', 'seafarers', 'cities and knights', 'explorers', 'pirates', 'barbarians', 'connect', 'strategy', 'trading'] },
-  'sky-clash': { category: 'Party', status: 'in-progress', playTime: '5–8 min / match', searchTerms: ['melee', 'smash', 'fighting', 'mario', 'fox', 'falco', 'kirby', 'marth', 'bowser', 'pikachu', '33 fighters', '30 stages', 'cpu', 'combat', '3d'] },
+  'sky-clash': { category: 'Party', status: 'in-progress', playTime: '5–8 min / match', searchTerms: ['fighting', 'platform fighter', 'brawl', 'sola', 'toll', 'kes', 'vesper', 'beacon rock', 'bellyard', 'cpu', 'combat', '3d'] },
   'hijinks': { category:'Party',status:'ready',playTime:'All night',searchTerms:['jokes','writing','drawing','trivia','bluffing','voting','minigames','party pack','trophies'] },
   'trolley-court': { category:'Party',status:'ready',playTime:'20–45 min',searchTerms:['cards','trolley problem','debate','arguing','teams','judge','jury','dilemma','writing','big group'] },
   'blockwild': { category:'Sandbox',status:'ready',playTime:'Open-ended',searchTerms:['building','crafting','exploration','creative','survival','3d','city','driving','open world'] },
