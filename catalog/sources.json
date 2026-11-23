@@ -300,12 +300,12 @@
         {
           "id": "island-settlers",
           "title": "Island Settlers",
-          "description": "Trade, build and sail a Catan-style island with private phone hands, plus Seafarers, Cities & Knights and more.",
+          "description": "Trade, build and sail a Catan-style island with private phone hands, plus Seafarers, Cities & Knights and more. Big rooms split into islands of four.",
           "category": "Strategy",
           "status": "in-progress",
           "players": {
             "min": 1,
-            "max": 10
+            "max": 64
           },
           "supportsSolo": true,
           "requiresSharedDisplay": false,
@@ -315,11 +315,12 @@
             "Touch",
             "Phone controllers"
           ],
-          "playTime": "About 60 min \u00b7 varies",
+          "playTime": "20\u201360 min \u00b7 varies",
           "launch": "room",
           "searchTerms": [
             "solo",
             "cpu",
+            "big group",
             "catan",
             "settlers",
             "seafarers",
@@ -334,12 +335,12 @@
           "tags": [
             "strategy",
             "board game",
-            "1\u201310 players"
+            "1\u201364 players"
           ],
           "creator": {
             "name": "PartyPlay"
           },
-          "detail": "A Catan-inspired game for 1\u201310 with Standard turns or Connect-style rounds. Mix in Seafarers, Cities & Knights, Explorers & Pirates, the Traders & Barbarians scenarios (Fishing, Rivers, Caravans, Barbarian Attack, Deliveries) and two variants. Play alone against CPUs on the host device, or invite friends with private phone hands. CPUs fill empty seats to the chosen table size. 7\u201310 player layouts and Connect are adaptations.",
+          "detail": "A Catan-inspired game for 1\u201364. Up to ten share one island, with Standard turns or Connect-style rounds. A bigger room (or any room the host sets to Archipelago) is dealt onto islands of four that all play at once: three rolls for the whole room each round, then every island trades and builds, and the TV moves between islands until somebody in the room reaches the target. Mix in Seafarers, Cities & Knights, Explorers & Pirates, the Traders & Barbarians scenarios (Fishing, Rivers, Caravans, Barbarian Attack, Deliveries) and two variants. Play alone against CPUs on the host device, or invite friends with private phone hands. CPUs fill empty seats. 7\u201310 player layouts, Connect and the Archipelago are PartyPlay adaptations.",
           "capabilities": [
             "solo",
             "keyboard",

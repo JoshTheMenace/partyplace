@@ -37,25 +37,27 @@ test('one host plays all three solo games, reconnects and changes to Kart with t
     host.send('room.play', {play:true}); await host.take('error'); assert.equal(room.roomView().players.length,0);
   } finally { await room.close(); await new Promise<void>(done => server.close(() => done())); }
 });
-test('ten phone seats survive Kitchen → Kart → Settlers → Kitchen; a full game refuses the host an eleventh seat and a roomy one splits the crew', async () => {
+test('ten phone seats survive Kitchen → Kart → Hotpot → Settlers → Kitchen; a full game refuses the host an eleventh seat and a roomy one splits the crew', async () => {
   const server = createServer(), room = createRoomServer(server,games,{startDelayMs:5,tickMs:5});
   await new Promise<void>(done => server.listen(0,'127.0.0.1',done));
   const connect = async () => { const ws = new WebSocket(`ws://127.0.0.1:${(server.address() as {port:number}).port}/ws`), peer = new Peer(ws); await new Promise<void>(done => ws.once('open',done)); return peer; };
   try {
     const host = await connect(); host.send('room.create'); const original = await host.take('room.welcome'), phones:Peer[] = [], ids:string[] = [];
     for (let i=0;i<10;i++) { const phone = await connect(); phone.send('room.join',{code:original.room.code,name:`Player ${i}`}); ids.push((await phone.take('room.welcome')).playerId); phones.push(phone); }
-    const legs = ['kitchen-rush','kart-party','island-settlers','kitchen-rush'];
+    const legs = ['kitchen-rush','kart-party','hotpot','island-settlers','kitchen-rush'];
     for (const [leg,id] of legs.entries()) {
       host.send('game.select',{gameId:id}); let selected = await host.take('room.welcome',p => p.room.gameId === id); assert.equal(selected.room.code,original.room.code); assert.deepEqual(selected.room.players.map((p:any) => p.id),ids);
       phones[0].send('room.play',{play:false}); await phones[0].take('error');
-      // Island Settlers seats ten, so with ten phones seated it has no place for the host. Kitchen Rush and Kart Party seat the whole room.
-      if (id === 'island-settlers') { host.send('room.play',{play:true}); await host.take('error'); assert.equal(room.roomView().players.length,10); continue; }
+      // Hotpot seats four, so with ten phones seated it has no place for the host. Kitchen Rush, Kart Party and Island Settlers seat the whole room.
+      if (id === 'hotpot') { host.send('room.play',{play:true}); await host.take('error'); assert.equal(room.roomView().players.length,10); continue; }
       // On the way back the host takes an eleventh seat in Kitchen Rush, which then splits the crew into two kitchens of six and five.
       const eleven = leg === legs.length - 1, seated = eleven ? [host,...phones] : phones;
       if (eleven) { host.send('room.play',{play:true}); selected = await host.take('room.welcome',p => p.room.players.length === 11); assert.deepEqual(selected.room.players.map((p:any) => p.id).filter((seat:string) => seat !== selected.playerId),ids); }
       for (const peer of seated) peer.send('room.ready',{ready:true,lobbyId:selected.room.lobbyId}); await host.take('room.state',p => p.room.gameId === id && p.room.players.length === seated.length && p.room.players.every((x:any) => x.ready));
       host.send('round.start'); const preparation = await host.take('round.prepare'); for (const peer of [host,...phones]) peer.send('round.ready',{roundId:preparation.roundId});
-      const snap = await host.take('game.snapshot',p => p.roundId === preparation.roundId); assert.equal((snap.publicView.base?.roster ?? snap.publicView.players).length,seated.length);
+      const snap = await host.take('game.snapshot',p => p.roundId === preparation.roundId); assert.equal((snap.publicView.base?.roster ?? snap.publicView.players ?? snap.publicView.league.islands.flatMap((island:any) => island.seats)).length,seated.length);
+      // Ten players share one Island Settlers board; an eleventh would make it an archipelago.
+      if (id === 'island-settlers') assert.equal(snap.publicView.league.islands.length,1);
       if (id === 'kitchen-rush') assert.deepEqual(snap.publicView.base.lines.map((line:number[]) => line[0]),eleven ? [6,5] : [10]);
       host.send('round.abort',{roundId:preparation.roundId}); await host.take('room.state',p => p.room.phase === 'lobby');
     }
